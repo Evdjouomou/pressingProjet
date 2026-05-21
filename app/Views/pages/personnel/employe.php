@@ -87,11 +87,11 @@
                             <!-- Employé -->
                             <td class="ps-4">
                                 <div class="d-flex align-items-center gap-3">
-                                    <img src="<?= base_url('uploads/photos/' . ($e['photo'] ?: 'default.png')) ?>"
+                                    <img src="<?= base_url('img/' . ($e['photo'] ?: 'default.png')) ?>"
                                          class="rounded-circle border"
                                          width="42" height="42"
                                          style="object-fit:cover;"
-                                         onerror="this.src='<?= base_url('assets/img/avatar-default.png') ?>'">
+                                         onerror="this.src='<?= base_url('img/avatar-default.png') ?>'">
                                     <div>
                                         <div class="fw-semibold"><?= esc($e['nom_complet']) ?></div>
                                         <div class="text-muted" style="font-size:11px;">
@@ -145,7 +145,7 @@
                                         title="Modifier">
                                     <i class="fas fa-edit fa-sm text-primary"></i>
                                 </button>
-                                <a href="<?= base_url('employe/delete/' . $e['id']) ?>"
+                                <a href="<?= base_url('personnel/delete/' . $e['id_employe']) ?>"
                                    class="btn btn-sm ms-1"
                                    style="width:32px;height:32px;border-radius:8px;
                                           background:#fff5f5;border:1px solid #fecaca;"
@@ -168,11 +168,11 @@
                                          style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);">
                                         <button type="button" class="btn-close btn-close-white float-end mt-1"
                                                 data-bs-dismiss="modal"></button>
-                                        <img src="<?= base_url('uploads/photos/' . ($e['photo'] ?: 'default.png')) ?>"
+                                        <img src="<?= base_url('img/' . ($e['photo'] ?: 'default.png')) ?>"
                                              class="rounded-circle border border-3 border-white shadow mb-3"
                                              width="80" height="80"
                                              style="object-fit:cover;"
-                                             onerror="this.src='<?= base_url('assets/img/avatar-default.png') ?>'">
+                                             onerror="this.src='<?= base_url('img/avatar-default.png') ?>'">
                                         <h5 class="fw-bold text-white mb-1"><?= esc($e['nom_complet']) ?></h5>
                                         <div class="d-flex justify-content-center gap-2 flex-wrap">
                                             <span class="badge bg-white text-dark"
@@ -262,7 +262,7 @@
                         <!-- ══════════════════════════════ -->
                         <!-- MODAL MODIFIER                -->
                         <!-- ══════════════════════════════ -->
-                        <div class="modal fade" id="modalModifier<?= $e['id'] ?>" tabindex="-1" aria-hidden="true">
+                        <div class="modal fade" id="modalModifier<?= $e['id_employe'] ?>" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
                                 <div class="modal-content border-0 shadow-lg rounded-4">
 
@@ -274,7 +274,7 @@
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
 
-                                    <form action="<?= base_url('employe/update/' . $e['id']) ?>"
+                                    <form action="<?= base_url('personnel/update/' . $e['id_employe']) ?>"
                                           method="post" enctype="multipart/form-data">
 
                                         <div class="modal-body px-4 py-3">
@@ -318,7 +318,7 @@
                                                 <!-- Poste -->
                                                 <div class="col-12">
                                                     <label class="form-label fw-semibold small">Poste (salaire lié)</label>
-                                                    <select name="id_position" class="form-select">
+                                                    <select name="id_poste" class="form-select">
                                                         <?php foreach ($postes as $p): ?>
                                                             <option value="<?= $p['id_poste'] ?>"
                                                                 <?= $e['poste_id'] == $p['id_poste'] ? 'selected' : '' ?>>
@@ -395,7 +395,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <form action="<?= base_url('employe/store') ?>" method="POST" enctype="multipart/form-data">
+            <form action="<?= base_url('personnel/store') ?>" method="POST" enctype="multipart/form-data">
 
                 <div class="modal-body px-4 py-3">
 

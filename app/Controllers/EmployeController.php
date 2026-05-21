@@ -49,7 +49,7 @@ class EmployeController extends BaseController
         $photo = $this->request->getFile('photo');
         if ($photo && $photo->isValid() && !$photo->hasMoved()) {
             $nom = $photo->getRandomName();
-            $photo->move(ROOTPATH . 'public/uploads/photos', $nom);
+            $photo->move(ROOTPATH . 'public/img', $nom);
             $data['photo'] = $nom;
         }
 
@@ -68,15 +68,15 @@ class EmployeController extends BaseController
             'status'    => $this->request->getPost('status'),
             'telephone' => $this->request->getPost('telephone'),
             'email'     => $this->request->getPost('email'),
-            'poste_id'  => $this->request->getPost('poste_id'),
-            'shop_id'   => $this->request->getPost('shop_id'),
+            'poste_id'  => $this->request->getPost('id_poste'),
+            'shop_id'   => $this->request->getPost('id_shop'),
             'role'      => $this->request->getPost('role'),
         ];
 
         $photo = $this->request->getFile('photo');
         if ($photo && $photo->isValid() && !$photo->hasMoved()) {
             $nom = $photo->getRandomName();
-            $photo->move(ROOTPATH . 'public/uploads/photos', $nom);
+            $photo->move(ROOTPATH . 'public/img', $nom);
             $data['photo'] = $nom;
         }
 

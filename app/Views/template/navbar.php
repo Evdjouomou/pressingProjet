@@ -45,9 +45,9 @@
             <i class="bi bi-cash-coin"></i>
             <p>Factures</p>
         </a>
-        <a href="">
+        <a href="<?= base_url('personnel/planning') ?>">
             <i class="bi bi-gear"></i>
-            <p>Paramètres</p>
+            <p>Plannifications</p>
         </a>
     </div>
     <hr>
