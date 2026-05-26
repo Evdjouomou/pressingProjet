@@ -194,3 +194,9 @@ $routes->post('incidents/update/(:num)',         'IncidentController::update/$1'
 $routes->post('incidents/cloturer/(:num)',       'IncidentController::cloturer/$1');
 $routes->post('incidents/(:num)/photo',         'IncidentController::ajouterPhoto/$1');
 $routes->get ('incidents/photo/delete/(:num)',   'IncidentController::supprimerPhoto/$1');
+
+// Route pour les livraisons
+$routes->get('livraison', 'LivraisonController::index');
+
+// Route pour les abonnements (celle qui bloquait juste avant)
+$routes->get('abonnements', 'AbonnementController::index');
