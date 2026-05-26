@@ -33,7 +33,7 @@ class PosteController extends BaseController
             'salaire'    => $this->request->getPost('salaire'),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
-        return redirect()->to('position')->with('success', 'Poste créé avec succès.');
+        return redirect()->to('poste')->with('success', 'Poste créé avec succès.');
     }
 
     public function update(int $id)
@@ -43,7 +43,7 @@ class PosteController extends BaseController
             'nom_poste' => $this->request->getPost('nom_poste'),
             'salaire'   => $this->request->getPost('salaire'),
         ]);
-        return redirect()->to('position')->with('success', 'Poste mis à jour.');
+        return redirect()->to('poste')->with('success', 'Poste mis à jour.');
     }
 
     public function delete(int $id)
@@ -51,10 +51,10 @@ class PosteController extends BaseController
         $db = \Config\Database::connect();
         $nb = $db->table('employes')->where('poste_id', $id)->countAllResults();
         if ($nb > 0) {
-            return redirect()->to('position')
+            return redirect()->to('poste')
                              ->with('error', 'Impossible : ' . $nb . ' employé(s) sont affectés à ce poste.');
         }
         (new PosteModel())->delete($id);
-        return redirect()->to('position')->with('success', 'Poste supprimé.');
+        return redirect()->to('poste')->with('success', 'Poste supprimé.');
     }
 }

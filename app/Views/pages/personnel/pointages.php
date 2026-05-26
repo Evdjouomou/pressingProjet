@@ -109,7 +109,7 @@
                                 <tr>
                                     <td class="ps-4">
                                         <div class="d-flex align-items-center gap-2">
-                                            <img src="<?= base_url('uploads/photos/' . ($p['photo'] ?: 'default.png')) ?>"
+                                            <img src="<?= base_url('img/' . ($p['photo'] ?: 'default.png')) ?>"
                                                  class="rounded-circle border" width="34" height="34"
                                                  style="object-fit:cover;">
                                             <div>
@@ -173,7 +173,7 @@
                     <?php else: ?>
                     <?php foreach ($absents as $a): ?>
                     <div class="d-flex align-items-center gap-3 px-4 py-2 border-bottom">
-                        <img src="<?= base_url('uploads/photos/' . ($a['photo'] ?: 'default.png')) ?>"
+                        <img src="<?= base_url('img/' . ($a['photo'] ?: 'default.png')) ?>"
                              class="rounded-circle border" width="36" height="36"
                              style="object-fit:cover;">
                         <div>

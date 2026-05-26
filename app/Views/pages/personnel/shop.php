@@ -26,7 +26,7 @@
             <a href="<?= base_url('personnel') ?>" class="btn btn-outline-secondary rounded-2 px-3">
                 <i class="fas fa-users me-2"></i>Personnel
             </a>
-            <a href="<?= base_url('position') ?>" class="btn btn-outline-secondary rounded-2 px-3">
+            <a href="<?= base_url('poste') ?>" class="btn btn-outline-secondary rounded-2 px-3">
                 <i class="fas fa-briefcase me-2"></i>Postes
             </a>
             <button class="btn btn-primary rounded-2 px-4"

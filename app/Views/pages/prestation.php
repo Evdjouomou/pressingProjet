@@ -6,9 +6,18 @@
         <div>
             <h2 class="fw-bold">Catalogue des Prestations</h2>
         </div>
-        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAddService">
-            <i class="bi bi-plus-lg"></i> Nouveau Service
-        </button>
+        <div class="d-flex gap-2">
+            <a href="<?= base_url('libelle') ?>" class="btn btn-outline-secondary btn-sm rounded-2">
+                <i class="fas fa-cash-register me-1"></i>Libelle
+            </a>
+            <a href="<?= base_url('grillepro') ?>" class="btn btn-outline-secondary btn-sm rounded-2">
+                <i class="fas fa-box me-1"></i>Grille
+            </a>
+            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAddService">
+                <i class="bi bi-plus-lg"></i> Nouveau Service
+            </button>
+        </div>
+        
     </div>
 
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">

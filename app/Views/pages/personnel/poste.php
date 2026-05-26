@@ -95,7 +95,7 @@
                             <i class="fas fa-edit me-1"></i>Modifier
                         </button>
                         <?php if ($p['nb_employes'] == 0): ?>
-                        <a href="<?= base_url('position/delete/' . $p['id_poste']) ?>"
+                        <a href="<?= base_url('poste/delete/' . $p['id_poste']) ?>"
                            class="btn btn-sm rounded-2"
                            style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;"
                            onclick="return confirm('Supprimer ce poste ?')">
@@ -125,7 +125,7 @@
                         </div>
                         <button class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <form action="<?= base_url('position/update/' . $p['id_poste']) ?>" method="POST">
+                    <form action="<?= base_url('poste/update/' . $p['id_poste']) ?>" method="POST">
                         <?= csrf_field() ?>
                         <div class="modal-body px-4 py-3">
                             <div class="mb-3">
@@ -172,7 +172,7 @@
                 </div>
                 <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="<?= base_url('position/store') ?>" method="POST">
+            <form action="<?= base_url('poste/store') ?>" method="POST">
                 <?= csrf_field() ?>
                 <div class="modal-body px-4 py-3">
                     <div class="mb-3">

@@ -148,7 +148,7 @@
 
 <!-- MODAL NOUVELLE CAMPAGNE -->
 <div class="modal fade" id="modalNouvelleCampagne" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
 
             <div class="modal-header border-0 px-4 pt-4 pb-0">

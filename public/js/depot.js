@@ -259,8 +259,18 @@ function initFormulaire() {
             alert('Client ou Panier vide !');
             return;
         }
+
+        const acompte = parseFloat(document.getElementById('champ_acompte').value) || 0;
+        const caisseOuverte = <?= $caissePourVue ? 'true' : 'false' ?>;
+
+        if (acompte > 0 && !caisseOuverte) {
+            e.preventDefault();
+            alert('Impossible d\'encaisser un acompte : aucune caisse n\'est ouverte.\n\nOuvrez la caisse dans le module POS ou enregistrez le dépôt sans acompte.');
+            return;
+        }
+
         document.getElementById('form_id_client').value     = idClientSelectionne;
-        document.getElementById('form_acompte').value       = document.getElementById('champ_acompte').value;
+        document.getElementById('form_acompte').value       = acompte;
         document.getElementById('form_mode_paiement').value = document.getElementById('champ_mode_paiement').value;
         document.getElementById('form_date_retrait').value  = document.getElementById('champ_date_retrait').value;
         document.getElementById('form_numero_bon').value    = document.getElementById('champ_numero_bon').value;

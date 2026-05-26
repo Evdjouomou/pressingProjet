@@ -70,8 +70,8 @@ class DepotController extends BaseController
         $idClient        = $this->request->getPost('id_client');
         $dateRetrait     = $this->request->getPost('date_retrait');
         $numBon          = $this->request->getPost('numero_bon') ?: 'BON-' . time();
-        $acompte         = $this->request->getPost('acompte') ?: 0;
-        $modePaiement    = $this->request->getPost('mode_paiement');
+        $acompte         = (float) ($this->request->getPost('acompte') ?: 0);
+        $modePaiement    = $this->request->getPost('mode_paiement') ?: 'especes';
         $libellesIds     = $this->request->getPost('articles_libelle_id');
         $articlesPrix    = $this->request->getPost('articles_prix');
         $prestaIds       = $this->request->getPost('articles_presta_id');
@@ -83,6 +83,22 @@ class DepotController extends BaseController
 
         if (empty($idClient) || empty($libellesIds)) {
             return redirect()->back()->with('error', 'Le panier est vide ou le client n\'est pas sélectionné.');
+        }
+
+        // ── Vérification caisse ouverte si acompte > 0 ──
+        $caisseCourante = null;
+        if ($acompte > 0) {
+            $caisseCourante = $db->table('caisses')
+                ->where('statut', 'ouverte')
+                ->orderBy('date_ouverture', 'DESC')
+                ->limit(1)
+                ->get()->getRowArray();
+
+            if (!$caisseCourante) {
+                return redirect()->back()->with('error',
+                    'Aucune caisse ouverte. Ouvrez la caisse avant d\'encaisser un acompte.'
+                );
+            }
         }
 
         $db->transStart();
@@ -98,7 +114,7 @@ class DepotController extends BaseController
             'statut_global'         => 'depot',
         ]);
 
-        // 2. Récupérer l'étape 1 (Déposé) pour initialiser le workflow
+        // 2. Récupérer étape 1 pour le workflow
         $etape1 = $db->table('etapes_production')
                     ->where('ordre', 1)
                     ->where('est_actif', 1)
@@ -106,13 +122,11 @@ class DepotController extends BaseController
 
         $artModel    = new \App\Models\DepotArticleModel();
         $prestaModel = new \App\Models\DepotPrestationModel();
-
         $totalPointsCalcules = 0;
 
         foreach ($libellesIds as $index => $libelleId) {
             $designation = trim(($articlesMarque[$index] ?? '') . ' ' . ($articlesCouleur[$index] ?? ''));
 
-            // 3. Insertion de l'article avec étape initiale
             $idArtDepose = $artModel->insert([
                 'depot_id'          => $idDepot,
                 'libelle_id'        => $libelleId,
@@ -124,7 +138,6 @@ class DepotController extends BaseController
                 'etape_courante_id' => $etape1['id_etape'] ?? 1,
             ]);
 
-            // 4. Insertion de la prestation
             $prestaModel->insert([
                 'article_depose_id' => $idArtDepose,
                 'service_id'        => $prestaIds[$index],
@@ -132,7 +145,6 @@ class DepotController extends BaseController
                 'options_express'   => ($articlesExpress[$index] == '1') ? 1 : 0,
             ]);
 
-            // 5. Créer l'entrée workflow initiale (étape Déposé)
             if ($etape1) {
                 $db->table('article_workflow')->insert([
                     'article_depose_id' => $idArtDepose,
@@ -141,7 +153,6 @@ class DepotController extends BaseController
                 ]);
             }
 
-            // 6. Calcul des points fidélité depuis la table services
             $service = $db->table('services')
                         ->select('points_fidelite')
                         ->where('id_service', $prestaIds[$index])
@@ -152,7 +163,36 @@ class DepotController extends BaseController
             }
         }
 
-        // 7. Crédit des points sur le client
+        // 3. Créer transaction si acompte > 0
+        if ($acompte > 0 && $caisseCourante) {
+            $db->table('transactions')->insert([
+                'depot_id'        => $idDepot,
+                'caisse_id'       => $caisseCourante['id_caisse'],
+                'employe_id'      => session()->get('employe_id'),
+                'client_id'       => $idClient,
+                'type'            => 'encaissement',
+                'montant'         => $acompte,
+                'mode_paiement'   => $modePaiement,
+                'montant_especes' => $modePaiement === 'especes'      ? $acompte : 0,
+                'montant_mobile'  => $modePaiement === 'mobile_money' ? $acompte : 0,
+                'montant_carte'   => $modePaiement === 'carte'        ? $acompte : 0,
+                'statut'          => 'valide',
+                'motif'           => 'Acompte à la réception — ' . $numBon,
+                'created_at'      => date('Y-m-d H:i:s'),
+            ]);
+
+            // Mettre à jour les totaux de la caisse
+            $db->table('caisses')
+            ->where('id_caisse', $caisseCourante['id_caisse'])
+            ->update([
+                'total_especes' => $caisseCourante['total_especes'] + ($modePaiement === 'especes'      ? $acompte : 0),
+                'total_mobile'  => $caisseCourante['total_mobile']  + ($modePaiement === 'mobile_money' ? $acompte : 0),
+                'total_carte'   => $caisseCourante['total_carte']   + ($modePaiement === 'carte'        ? $acompte : 0),
+                'total_ca'      => $caisseCourante['total_ca']      + $acompte,
+            ]);
+        }
+
+        // 4. Créditer points fidélité
         if ($totalPointsCalcules > 0) {
             $db->table('clients')
             ->where('id_client', $idClient)
@@ -162,15 +202,13 @@ class DepotController extends BaseController
 
         $db->transComplete();
 
-        // Envoyer notification de confirmation dépôt
-        if ($db->transStatus() !== false) {
-            $notif = new \App\Services\NotificationService();
-            $notif->depotConfirme($idDepot);
-        }
-
         if ($db->transStatus() === false) {
             return redirect()->back()->with('error', 'Erreur lors de la sauvegarde en base de données.');
         }
+
+        // 5. Notification dépôt confirmé
+        $notif = new \App\Services\NotificationService();
+        $notif->depotConfirme($idDepot);
 
         return redirect()->to('/depot')->with('success', 'Dépôt enregistré avec succès ! Bon n° ' . $numBon);
     }
