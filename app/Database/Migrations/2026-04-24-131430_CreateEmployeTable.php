@@ -23,6 +23,12 @@ class CreateEmployeTable extends Migration
                 'type' => 'VARCHAR',
                 'constraint' => 50
             ],
+            'premiere_connexion' => [
+                 'type'       => 'TINYINT',
+                  'constraint' => 1,
+                   'default'    => 1, // 1 veut dire "Oui, c'est la première connexion"
+                    'after'      => 'password', // Place la colonne juste après le mot de passe
+            ],
             'nom_complet' => [
                 'type' => 'VARCHAR',
                 'constraint' => 50

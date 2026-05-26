@@ -11,7 +11,7 @@ class EmployeModel extends Model
         'matricule', 'password', 'nom_complet', 'email',
         'num_cni', 'photo', 'telephone', 'lieu_residence',
         'num_urgence', 'shop_id', 'poste_id', 'status',
-        'role', 'created_at',
+        'role', 'created_at', 'premiere_connexion'
     ];
 
     // Récupère tous les employés avec leur poste et shop joints
