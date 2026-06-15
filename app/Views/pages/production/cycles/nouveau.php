@@ -17,11 +17,14 @@
                 <i class="fas fa-arrow-left me-1"></i>Retour
             </a>
             <h4 class="fw-bold mb-0">Nouveau cycle machine</h4>
-            <small class="text-muted">Scannez ou saisissez les codes-barres des articles à traiter</small>
+            <small class="text-muted">
+                Scannez ou saisissez les codes-barres des articles à traiter
+            </small>
         </div>
     </div>
 
-    <form action="<?= base_url('production/cycles/store') ?>" method="POST" id="formCycle">
+    <form action="<?= base_url('production/cycles/store') ?>"
+          method="POST" id="formCycle">
         <?= csrf_field() ?>
 
         <div class="row g-4">
@@ -40,7 +43,9 @@
                         </p>
                         <select name="machine_id" class="form-select" required
                                 id="selectMachine">
-                            <option value="" disabled selected>Choisir une machine...</option>
+                            <option value="" disabled selected>
+                                Choisir une machine...
+                            </option>
                             <?php foreach ($machines as $m): ?>
                             <option value="<?= $m['id_machine'] ?>"
                                     data-capacite="<?= $m['capacite_max'] ?>">
@@ -49,8 +54,10 @@
                             </option>
                             <?php endforeach; ?>
                         </select>
-                        <div id="capaciteInfo" class="mt-2 d-none rounded-2 p-2 text-center"
-                             style="background:#eff6ff;border:1px solid #bfdbfe;font-size:12px;color:#1d4ed8;">
+                        <div id="capaciteInfo"
+                             class="mt-2 d-none rounded-2 p-2 text-center"
+                             style="background:#eff6ff;border:1px solid #bfdbfe;
+                                    font-size:12px;color:#1d4ed8;">
                         </div>
                     </div>
                 </div>
@@ -67,26 +74,23 @@
                             <div class="ligne-conso row g-2 mb-2 align-items-end">
                                 <div class="col-7">
                                     <label class="form-label fw-semibold small">Produit</label>
-                                    <select name="produits[]" class="form-select form-select-sm">
-                                        <option value="">-- Aucun --</option>
+                                    <select name="produits[]" class="form-select form-select-sm" required>
+                                        <option value="" disabled selected>-- Choisir un produit --</option>
                                         <?php foreach ($consommables as $c): ?>
                                         <option value="<?= $c['id_produit'] ?>">
-                                            <?= esc($c['nom']) ?>
-                                            (<?= $c['stock'] ?> <?= esc($c['unite']) ?>)
+                                            <?= esc($c['nom']) ?> (<?= $c['stock'] ?> <?= esc($c['unite']) ?>)
                                         </option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
                                 <div class="col-4">
                                     <label class="form-label fw-semibold small">Qté utilisée</label>
-                                    <input type="number" name="quantites[]"
-                                           class="form-control form-control-sm"
-                                           placeholder="0" min="0" step="0.1">
+                                    <input type="number" name="quantites[]" class="form-control form-control-sm"
+                                        placeholder="0" min="0.1" step="0.1" required>
                                 </div>
                                 <div class="col-1 d-flex align-items-end">
                                     <button type="button" class="btn btn-outline-danger btn-sm rounded-2"
-                                            onclick="supprimerConsommable(this)"
-                                            style="height:31px;width:31px;padding:0;">
+                                            onclick="supprimerConsommable(this)" style="height:31px;width:31px;padding:0;">
                                         <i class="fas fa-times" style="font-size:11px;"></i>
                                     </button>
                                 </div>
@@ -122,43 +126,43 @@
                 <div class="card border-0 shadow-sm rounded-3">
                     <div class="card-body">
                         <p class="text-uppercase text-muted fw-semibold mb-3"
-                           style="font-size:11px;letter-spacing:.5px;">
+                        style="font-size:11px;letter-spacing:.5px;">
                             <i class="fas fa-tshirt me-2"></i>Articles à traiter
                             <span id="compteurArticles"
-                                  class="ms-2 badge bg-primary rounded-pill">0</span>
+                                class="ms-2 badge bg-primary rounded-pill">0</span>
                         </p>
 
-                        <!-- Zone scan -->
-                        <div class="input-group mb-3">
-                            <span class="input-group-text bg-light">
-                                <i class="fas fa-barcode text-muted"></i>
-                            </span>
-                            <input type="text"
-                                   id="inputScan"
-                                   class="form-control shadow-none"
-                                   placeholder="Scanner ou saisir le code-barres..."
-                                   autocomplete="off">
-                            <button type="button" class="btn btn-primary"
-                                    onclick="scannerArticle()">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-
-                        <!-- Feedback scan -->
-                        <div id="feedbackScan" class="d-none mb-3 rounded-2 p-2"
-                             style="font-size:12px;"></div>
-
-                        <!-- Liste articles scannés -->
-                        <div id="listeArticles" style="max-height:400px;overflow-y:auto;">
-                            <div id="videMsg" class="text-center py-4 text-muted">
-                                <i class="fas fa-barcode fa-2x mb-2 d-block opacity-25"></i>
-                                <span class="small">Scannez les codes-barres des articles</span>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small">N° Ticket article</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-barcode text-muted"></i>
+                                </span>
+                                <input type="text"
+                                    id="inputScan"
+                                    class="form-control shadow-none"
+                                    placeholder="BC-XXXXXXXXXX-0"
+                                    autocomplete="off"
+                                    style="font-family:monospace;letter-spacing:1px;">
+                                <button type="button"
+                                        class="btn btn-primary"
+                                        onclick="scannerArticle()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Textarea cachée envoyée au serveur -->
-                        <textarea name="barcodes" id="barcodesCaches"
-                                  class="d-none"></textarea>
+                        <div id="feedbackScan" class="d-none mb-3 rounded-2 p-2"
+                            style="font-size:12px;"></div>
+
+                        <div id="listeArticles" class="mt-3">
+                            <div id="videMsg" class="text-center py-4 text-muted border border-dashed rounded-3">
+                                <i class="fas fa-qrcode fa-2x mb-2 d-block text-secondary"></i>
+                                Aucun article scanné pour ce cycle.
+                            </div>
+                        </div>
+
+                        <textarea name="barcodes" id="barcodesCaches" class="d-none"></textarea>
 
                     </div>
                 </div>
@@ -170,7 +174,8 @@
         <div class="text-end mt-4">
             <a href="<?= base_url('production/cycles') ?>"
                class="btn btn-light rounded-2 px-4 me-2">Annuler</a>
-            <button type="submit" class="btn btn-success btn-lg rounded-2 px-5"
+            <button type="submit"
+                    class="btn btn-success btn-lg rounded-2 px-5"
                     id="btnSubmit" disabled>
                 <i class="fas fa-play me-2"></i>Lancer le cycle
             </button>
@@ -179,147 +184,221 @@
     </form>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script>
-const BASE = '<?= base_url() ?>';
-let articlesScannés = {}; // barcode → données article
-let capaciteMax = 0;
+const BASE          = '<?= base_url() ?>';
+let articlesScannés = {};
+let capaciteMax     = 0;
 
 // ── Machine : afficher capacité ──────────────────────
-document.getElementById('selectMachine').addEventListener('change', function () {
-    const opt = this.options[this.selectedIndex];
-    capaciteMax = parseInt(opt.dataset.capacite) || 0;
-    const info = document.getElementById('capaciteInfo');
-    info.classList.remove('d-none');
-    info.textContent = 'Capacité max : ' + capaciteMax + ' articles';
-    verifierBouton();
-});
+document.getElementById('selectMachine')
+    .addEventListener('change', function () {
+        const opt = this.options[this.selectedIndex];
+        capaciteMax = parseInt(opt.dataset.capacite) || 0;
+        const info = document.getElementById('capaciteInfo');
+        info.classList.remove('d-none');
+        info.innerHTML = `<i class="fas fa-info-circle me-1"></i>
+            Capacité max : <strong>${capaciteMax} articles</strong>`;
+        verifierBouton();
+    });
 
-// ── Scan au clavier (scanner USB = presse Entrée) ────
-document.getElementById('inputScan').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        scannerArticle();
-    }
-});
+// ── Scan au clavier ──────────────────────────────────
+document.getElementById('inputScan')
+    .addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            scannerArticle();
+        }
+    });
+
+// ── Focus automatique sur le champ scan ──────────────
+document.getElementById('inputScan').focus();
 
 // ── Scanner un article ───────────────────────────────
 function scannerArticle() {
-    const code = document.getElementById('inputScan').value.trim();
+    const raw  = document.getElementById('inputScan').value.trim();
+    const code = raw.toUpperCase(); // normaliser
+
     if (!code) return;
 
+    // Vérifier format BC-
+    if (!code.startsWith('BC-')) {
+        afficherFeedback('warning',
+            '⚠️ Format invalide. Le code doit commencer par <strong>BC-</strong> '
+            + '(ex: BC-1780356482-0).'
+        );
+        document.getElementById('inputScan').select();
+        return;
+    }
+
     if (articlesScannés[code]) {
-        afficherFeedback('warning', '⚠️ Article déjà dans la liste : ' + code);
+        afficherFeedback('warning',
+            '⚠️ Cet article est déjà dans la liste : <strong>' + code + '</strong>'
+        );
         document.getElementById('inputScan').value = '';
         return;
     }
 
     if (capaciteMax > 0 && Object.keys(articlesScannés).length >= capaciteMax) {
-        afficherFeedback('danger', '🚫 Capacité max atteinte (' + capaciteMax + ' articles)');
+        afficherFeedback('danger',
+            '🚫 Capacité max atteinte (<strong>'
+            + capaciteMax + ' articles</strong>). '
+            + 'Choisissez une autre machine ou lancez ce cycle.'
+        );
         return;
     }
 
-    fetch(`${BASE}production/api/article/${encodeURIComponent(code)}`)
+    // Appel API
+    fetch(`${BASE}/production/api/article/${encodeURIComponent(code)}`)
         .then(r => r.json())
         .then(data => {
             if (!data.success) {
-                afficherFeedback('danger', '❌ ' + data.message);
+                afficherFeedback('danger',
+                    '❌ <strong>' + code + '</strong> introuvable. '
+                    + 'Vérifiez le numéro de ticket sur l\'étiquette de l\'article.'
+                );
                 return;
             }
             const art = data.article;
             articlesScannés[code] = art;
-            afficherFeedback('success', '✅ ' + art.nom_libelle + ' — ' + art.nomclient);
-            ajouterCarteArticle(art);
+            afficherFeedback('success',
+                '✅ <strong>' + art.nom_libelle + '</strong> — '
+                + art.nomclient + ' ('
+                + art.code_commande + ')'
+            );
+            ajouterCarteArticle(art, code);
             mettreAJourBarcodes();
             document.getElementById('inputScan').value = '';
             document.getElementById('inputScan').focus();
+        })
+        .catch(() => {
+            afficherFeedback('danger', '❌ Erreur réseau. Réessayez.');
         });
 }
 
-// ── Carte article dans la liste ──────────────────────
-function ajouterCarteArticle(art) {
+// ── Carte article ─────────────────────────────────────
+function ajouterCarteArticle(art, code) {
     document.getElementById('videMsg').classList.add('d-none');
-    const div = document.createElement('div');
-    div.id = 'art-' + art.barcode_unique;
+
+    const div     = document.createElement('div');
+    div.id        = 'art-' + code.replace(/[^a-zA-Z0-9]/g, '_');
     div.className = 'border rounded-2 p-3 mb-2 d-flex justify-content-between align-items-start';
     div.style.fontSize = '12px';
     div.innerHTML = `
         <div>
-            <div class="fw-semibold">${art.nom_libelle}
-                ${art.options_express == 1 ? '<span class="badge bg-danger ms-1" style="font-size:10px;">🚀 Express</span>' : ''}
+            <div class="fw-semibold" style="font-size:13px;">
+                ${art.nom_libelle}
+                ${art.options_express == 1
+                    ? '<span class="badge bg-danger ms-1" style="font-size:10px;">🚀 Express</span>'
+                    : ''}
             </div>
-            <div class="text-muted">${art.nomclient} · <span class="text-primary">${art.code_commande}</span></div>
-            <div style="font-family:monospace;font-size:11px;color:#6b7280;">${art.barcode_unique}</div>
-            ${art.etape_libelle ? `<div class="text-muted" style="font-size:10px;">Étape : ${art.etape_libelle}</div>` : ''}
-            ${art.observations ? `<div style="color:#f59e0b;font-size:11px;">⚠ ${art.observations}</div>` : ''}
+            <div class="text-muted">
+                ${art.nomclient}
+                · <span class="text-primary">${art.code_commande}</span>
+            </div>
+            <div style="font-family:monospace;font-size:11px;color:#6b7280;
+                        letter-spacing:1px;margin-top:2px;">
+                🏷️ ${code}
+            </div>
+            ${art.etape_libelle
+                ? `<div class="text-muted" style="font-size:10px;">
+                       Étape actuelle : ${art.etape_libelle}
+                   </div>`
+                : ''}
+            ${art.observations
+                ? `<div style="color:#f59e0b;font-size:11px;">
+                       ⚠ ${art.observations}
+                   </div>`
+                : ''}
         </div>
-        <button type="button" class="btn btn-sm btn-outline-danger rounded-2 ms-2"
-                style="height:28px;width:28px;padding:0;"
-                onclick="retirerArticle('${art.barcode_unique}')">
+        <button type="button"
+                class="btn btn-sm btn-outline-danger rounded-2 ms-2"
+                style="height:28px;width:28px;padding:0;flex-shrink:0;"
+                onclick="retirerArticle('${code}')">
             <i class="fas fa-times" style="font-size:11px;"></i>
         </button>`;
+
     document.getElementById('listeArticles').appendChild(div);
-    document.getElementById('compteurArticles').textContent = Object.keys(articlesScannés).length;
+    document.getElementById('compteurArticles')
+        .textContent = Object.keys(articlesScannés).length;
     verifierBouton();
 }
 
 // ── Retirer un article ────────────────────────────────
-function retirerArticle(barcode) {
-    delete articlesScannés[barcode];
-    const el = document.getElementById('art-' + barcode);
+function retirerArticle(code) {
+    delete articlesScannés[code];
+    const id = 'art-' + code.replace(/[^a-zA-Z0-9]/g, '_');
+    const el = document.getElementById(id);
     if (el) el.remove();
+
     if (Object.keys(articlesScannés).length === 0) {
         document.getElementById('videMsg').classList.remove('d-none');
     }
-    document.getElementById('compteurArticles').textContent = Object.keys(articlesScannés).length;
+    document.getElementById('compteurArticles')
+        .textContent = Object.keys(articlesScannés).length;
     mettreAJourBarcodes();
     verifierBouton();
 }
 
-// ── Mettre à jour textarea cachée ───────────────────
+// ── Mettre à jour textarea cachée ────────────────────
 function mettreAJourBarcodes() {
     document.getElementById('barcodesCaches').value =
         Object.keys(articlesScannés).join("\n");
 }
 
-// ── Activer bouton submit ────────────────────────────
+// ── Activer bouton submit ─────────────────────────────
 function verifierBouton() {
-    const nb = Object.keys(articlesScannés).length;
-    document.getElementById('btnSubmit').disabled = nb === 0;
+    const nb  = Object.keys(articlesScannés).length;
+    const btn = document.getElementById('btnSubmit');
+    btn.disabled = nb === 0;
     if (nb > 0) {
-        document.getElementById('btnSubmit').textContent = '';
-        document.getElementById('btnSubmit').innerHTML =
-            '<i class="fas fa-play me-2"></i>Lancer le cycle (' + nb + ' article(s))';
+        btn.innerHTML = `<i class="fas fa-play me-2"></i>Lancer le cycle (${nb} article(s))`;
+    } else {
+        btn.innerHTML = `<i class="fas fa-play me-2"></i>Lancer le cycle`;
     }
 }
 
-// ── Feedback ─────────────────────────────────────────
+// ── Feedback ──────────────────────────────────────────
 function afficherFeedback(type, msg) {
     const fb = document.getElementById('feedbackScan');
     fb.className = `mb-3 rounded-2 p-2 alert alert-${type}`;
     fb.style.fontSize = '12px';
-    fb.textContent = msg;
+    fb.innerHTML = msg;
     fb.classList.remove('d-none');
-    setTimeout(() => fb.classList.add('d-none'), 3000);
+    if (type !== 'danger') {
+        setTimeout(() => fb.classList.add('d-none'), 4000);
+    }
 }
 
-// ── Consommables : ajouter/supprimer ligne ───────────
-const consommablesHtml = document.querySelector('.ligne-conso').outerHTML;
+// ── Consommables ──────────────────────────────────────
+const ligneConsoHtml = document.querySelector('.ligne-conso').outerHTML;
 
 function ajouterConsommable() {
     const container = document.getElementById('lignesConsommables');
-    const div = document.createElement('div');
-    div.innerHTML = consommablesHtml;
+    const div       = document.createElement('div');
+    div.innerHTML   = ligneConsoHtml;
+    
+    // Reset les valeurs du clone mais préserve les attributs 'required'
+    div.querySelectorAll('select, input').forEach(el => {
+        if (el.tagName === 'SELECT') {
+            el.selectedIndex = 0;
+            el.required = true; // S'assure que c'est requis
+        } else {
+            el.value = '';
+            el.required = true; // S'assure que c'est requis
+        }
+    });
     container.appendChild(div.firstElementChild);
 }
 
 function supprimerConsommable(btn) {
     const lignes = document.querySelectorAll('.ligne-conso');
     if (lignes.length <= 1) {
-        btn.closest('.ligne-conso').querySelectorAll('select, input').forEach(el => {
-            if (el.tagName === 'SELECT') el.selectedIndex = 0;
-            else el.value = '';
-        });
+        // Reset plutôt que supprimer si c'est la dernière ligne restante
+        btn.closest('.ligne-conso')
+            .querySelectorAll('select, input').forEach(el => {
+                if (el.tagName === 'SELECT') el.selectedIndex = 0;
+                else el.value = '';
+            });
         return;
     }
     btn.closest('.ligne-conso').remove();

@@ -24,6 +24,14 @@ class CreateShopTable extends Migration
                 'type' => 'VARCHAR',
                 'constraint' => 100
             ],
+            'telephone' => [
+                'type' => 'VARCHAR',
+                'constraint' => 20
+            ],
+            'email' => [
+                'type' => 'VARCHAR',
+                'constraint' => 100
+            ],
             'created_at' => [
                 'type' => 'DATETIME'
             ]

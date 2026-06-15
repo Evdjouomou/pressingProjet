@@ -28,13 +28,28 @@
 
 <!-- Données PHP → JS (bridge) -->
 <script>
-    const BASE_URL   = "<?= base_url() ?>";
-    const clients    = <?= isset($clients) ? json_encode($clients) : '[]' ?>;
-    const allLibelles = <?= json_encode(array_map(fn($l) => [
-        'id_libelle'  => $l['id_libelle'],
-        'categorie'   => $l['categorie'],
-        'nom_libelle' => $l['nom_libelle'],
-    ], $libelles)) ?>;
+    const BASE_URL = "<?= base_url() ?>";
+
+    // Variable caisse — doit être avant depot.js
+    const caisseOuverte = <?= $caissePourVue ? 'true' : 'false' ?>;
+
+    // Clients
+    const clients = <?= isset($clients) ? json_encode(array_map(function($c) {
+        return [
+            'id_client'  => $c['id_client'],
+            'nomclient'  => $c['nomclient'],
+            'telephone'  => $c['telephone'],
+        ];
+    }, $clients)) : '[]' ?>;
+
+    // Libellés
+    const allLibelles = <?= json_encode(array_map(function($l) {
+        return [
+            'id_libelle'  => (string) $l['id_libelle'],
+            'categorie'   => $l['categorie'],
+            'nom_libelle' => $l['nom_libelle'],
+        ];
+    }, $libelles)) ?>;
 </script>
 
 <!-- JS externalisé -->

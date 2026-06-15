@@ -75,6 +75,17 @@
         <?php endforeach; ?>
     </div>
 
+    <!-- Stats par établissement (admin central uniquement) -->
+    <div id="zone_stats_shops" class="d-none mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0 text-muted" style="font-size:11px;
+                text-transform:uppercase;letter-spacing:.5px;">
+                <i class="fas fa-store me-2"></i>Vue par établissement
+            </h6>
+        </div>
+        <div class="row g-3" id="cartes_shops"></div>
+    </div>
+
     <div class="row g-4">
 
         <!-- Graphique CA 30 jours -->
@@ -228,6 +239,58 @@ function chargerKpis() {
 
             document.getElementById('lastUpdate').textContent =
                 'Dernière mise à jour : ' + new Date().toLocaleTimeString('fr-FR');
+
+            if (d.est_admin && d.stats_par_shop && d.stats_par_shop.length > 0) {
+                const zone   = document.getElementById('zone_stats_shops');
+                const cartes = document.getElementById('cartes_shops');
+                if (zone && cartes) {
+                    zone.classList.remove('d-none');
+                    cartes.innerHTML = d.stats_par_shop.map(s => `
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm rounded-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between
+                                                align-items-start mb-2">
+                                        <div class="fw-bold">${s.nom_shop}</div>
+                                        <a href="${BASE}shop/switcher/${s.id_shop}"
+                                           class="btn btn-xs btn-outline-primary"
+                                           style="font-size:10px;padding:2px 8px;
+                                                  border-radius:20px;">
+                                            Voir →
+                                        </a>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-4 text-center">
+                                            <div class="fw-bold text-primary"
+                                                 style="font-size:18px;">
+                                                ${s.depots_actifs}
+                                            </div>
+                                            <div class="text-muted"
+                                                 style="font-size:10px;">En cours</div>
+                                        </div>
+                                        <div class="col-4 text-center">
+                                            <div class="fw-bold text-dark"
+                                                 style="font-size:18px;">
+                                                ${s.nb_depots}
+                                            </div>
+                                            <div class="text-muted"
+                                                 style="font-size:10px;">Total</div>
+                                        </div>
+                                        <div class="col-4 text-center">
+                                            <div class="fw-bold text-success"
+                                                 style="font-size:15px;">
+                                                ${new Intl.NumberFormat('fr-FR')
+                                                    .format(s.ca_jour)}
+                                            </div>
+                                            <div class="text-muted"
+                                                 style="font-size:10px;">CA jour</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`).join('');
+                }
+            }
         });
 }
 

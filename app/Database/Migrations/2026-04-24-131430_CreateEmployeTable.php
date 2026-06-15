@@ -21,7 +21,7 @@ class CreateEmployeTable extends Migration
             ],
             'password' => [
                 'type' => 'VARCHAR',
-                'constraint' => 50
+                'constraint' => 255
             ],
             'premiere_connexion' => [
                  'type'       => 'TINYINT',

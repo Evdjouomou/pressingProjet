@@ -49,6 +49,22 @@
                 Enregistré le <?= date('d/m/Y à H:i', strtotime($depot['created_at'])) ?>
             </small>
         </div>
+
+        <!-- Ajoutez après "Enregistré le" -->
+        <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted small">Enregistré par</span>
+            <strong>
+                <?php if ($depot['enregistre_par_nom']): ?>
+                    <?= esc($depot['enregistre_par_nom']) ?>
+                    <span class="text-muted" style="font-size:11px;">
+                        (<?= esc($depot['enregistre_par_matricule']) ?>)
+                    </span>
+                <?php else: ?>
+                    —
+                <?php endif; ?>
+            </strong>
+        </div>
+        
         <div class="d-flex gap-2 flex-wrap">
             <a href="<?= base_url('depot/imprimer/' . $depot['id_depot']) ?>" target="_blank"
                class="btn btn-outline-primary">

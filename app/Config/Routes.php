@@ -9,6 +9,7 @@ use CodeIgniter\Router\RouteCollection;
 // ── Authentification & Connexion ─────────────────────
 $routes->get('/', 'AuthController::index');
 $routes->post('login', 'AuthController::login');
+$routes->get('logout', 'AuthController::logout');
 
 $routes->get('/personnel/changer-mot-de-passe', 'EmployeController::changementMotDePasse');
 $routes->post('/personnel/update-premier-password', 'EmployeController::updatePremierPassword');
@@ -41,11 +42,22 @@ $routes->post('/saveclient',         'ClientController::saveclient');
 $routes->post('updateclient/(:num)', 'ClientController::updateclient/$1');
 $routes->get('deleteclient/(:num)', 'ClientController::deleteclient/$1');
 
-$routes->post('receptionniste/saveabonnement/(:num)', 'DashboardRecepController::saveabonnement/$1');
-$routes->get('receptionniste/ficheabonnement',        'DashboardRecepController::ficheabonnement');
-$routes->get('receptionniste/fichedepot',             'DashboardRecepController::fichedepot');
-$routes->get('receptionniste/fichecommande',          'DashboardRecepController::commande');
-$routes->get('receptionniste/detailcommande',         'DashboardRecepController::detailcommande');
+// ── Abonnements (admin — gestion des offres) ──────────
+$routes->get ('abonnements',                      'AbonnementController::index');
+$routes->get ('abonnements/offres',               'AbonnementController::offres');
+$routes->post('abonnements/offres/store',         'AbonnementController::storeOffre');
+$routes->post('abonnements/offres/update/(:num)', 'AbonnementController::updateOffre/$1');
+$routes->get ('abonnements/offres/delete/(:num)', 'AbonnementController::deleteOffre/$1');
+
+// ── Abonnements (souscription client) ─────────────────
+$routes->get ('abonnements/nouveau/(:num)',       'AbonnementController::nouveau/$1');
+$routes->post('abonnements/souscrire',            'AbonnementController::souscrire');
+$routes->get ('abonnements/(:num)',               'AbonnementController::detail/$1');
+$routes->post('abonnements/renouveler/(:num)',    'AbonnementController::renouveler/$1');
+$routes->get ('abonnements/annuler/(:num)',       'AbonnementController::annuler/$1');
+
+// ── API (utilisée lors du dépôt) ──────────────────────
+$routes->get ('abonnements/api/client/(:num)',    'AbonnementController::apiAbonnementActif/$1');
 
 // ── Prestations & Grilles Tarifaires ─────────────────
 $routes->get('prestation',              'PrestationController::index');
@@ -74,6 +86,19 @@ $routes->get('depot/imprimer/(:num)',                    'DepotController::impri
 $routes->get('depot/fiche-prod/(:num)',                  'DepotController::imprimerFiche/$1');
 $routes->get('depot/ticket/(:num)/(:num)',               'DepotController::ticket/$1/$2');
 $routes->post('depot/payer/(:num)',                     'DepotController::marquerPaye/$1');
+
+// ── Dépôts prêts ──────────────────────────────────────
+$routes->get ('depot/prets',                      'DepotController::prets');
+$routes->post('depot/notifier/(:num)',            'DepotController::notifierClient/$1');
+$routes->post('depot/mode-retrait/(:num)',        'DepotController::definirModeRetrait/$1');
+
+// ── Livraisons ────────────────────────────────────────
+$routes->get ('livraison',                        'LivraisonController::index');
+$routes->get ('livraison/(:num)',                 'LivraisonController::detail/$1');
+$routes->post('livraison/store',                  'LivraisonController::store');
+$routes->post('livraison/assigner/(:num)',        'LivraisonController::assigner/$1');
+$routes->post('livraison/statut/(:num)',          'LivraisonController::changerStatut/$1');
+$routes->get ('livraison/fiche/(:num)',           'LivraisonController::fiche/$1');
 
 // ── Production & Atelier Kanban ───────────────────────
 $routes->get ('production',                      'ProductionController::kanban');
@@ -115,10 +140,13 @@ $routes->post('poste/store',           'PosteController::store');
 $routes->post('poste/update/(:num)',   'PosteController::update/$1');
 $routes->get ('poste/delete/(:num)',   'PosteController::delete/$1');
 
-$routes->get ('shop',                     'ShopController::index');
-$routes->post('shop/store',               'ShopController::store');
-$routes->post('shop/update/(:num)',       'ShopController::update/$1');
-$routes->get ('shop/delete/(:num)',       'ShopController::delete/$1');
+// ── Shops ────────────────────────────────────────────
+$routes->get ('shop',                  'ShopController::index');
+$routes->post('shop/store',            'ShopController::store');
+$routes->post('shop/update/(:num)',    'ShopController::update/$1');
+$routes->get ('shop/delete/(:num)',    'ShopController::delete/$1');
+$routes->get ('shop/switcher/(:num)',  'ShopController::switcher/$1');
+$routes->get ('shop/reset-vue',        'ShopController::resetVue');
 
 // ── Terminal de Caisse (POS) ─────────────────────────
 $routes->get ('pos',                          'PosController::index');
@@ -130,13 +158,16 @@ $routes->get ('pos/facture/(:num)',          'PosController::facture/$1');
 $routes->get ('pos/caisse',                  'PosController::caisse');
 $routes->post('pos/caisse/ouvrir',           'PosController::ouvrirCaisse');
 $routes->post('pos/caisse/cloturer',         'PosController::cloturerCaisse');
-$routes->get ('pos/caisse/rapport/(:num)',   'PosController::rapportCaisse/$1');
+$routes->get ('pos/rapport-caisse/(:num)',    'PosController::rapportCaisse/$1');
+$routes->get ('pos/historique-caisses',       'PosController::historiqueCaisses');
 $routes->get ('pos/produits',                'PosController::produits');
 $routes->post('pos/produits/store',          'PosController::storeProduit');
 $routes->post('pos/produits/update/(:num)',  'PosController::updateProduit/$1');
 $routes->get ('pos/produits/delete/(:num)', 'PosController::deleteProduit/$1');
 $routes->get ('pos/api/recherche',           'PosController::apiRecherche');
 $routes->get ('pos/api/caisse-courante',     'PosController::apiCaisseCourante');
+$routes->get ('pos/api/commande/(:num)',  'PosController::apiCommande/$1');
+$routes->post('pos/vendre-produit',       'PosController::vendreProduit');
 
 // ── Gestion des Stocks Inventaires ───────────────────
 $routes->get ('stocks',                        'StockController::index');
@@ -167,7 +198,7 @@ $routes->post('production/cycles/(:num)/article',        'CycleController::ajout
 $routes->get ('production/cycles/(:num)/retirer/(:num)', 'CycleController::retirerArticle/$1/$2');
 $routes->post('production/cycles/(:num)/terminer',       'CycleController::terminer/$1');
 $routes->get ('production/cycles/(:num)/annuler',        'CycleController::annuler/$1');
-$routes->get ('production/api/article/(:alphanum)',      'CycleController::apiArticleParBarcode/$1');
+$routes->get('production/api/article/(:any)', 'CycleController::apiArticleParBarcode/$1');
 
 // Configuration du parc de machines
 $routes->get ('production/machines',               'CycleController::machines');
@@ -195,8 +226,16 @@ $routes->post('incidents/cloturer/(:num)',       'IncidentController::cloturer/$
 $routes->post('incidents/(:num)/photo',         'IncidentController::ajouterPhoto/$1');
 $routes->get ('incidents/photo/delete/(:num)',   'IncidentController::supprimerPhoto/$1');
 
-// Route pour les livraisons
-$routes->get('livraison', 'LivraisonController::index');
+// ── Livreurs ──────────────────────────────────────────
+$routes->get ('livreurs',                    'LivreurController::index');
+$routes->post('livreurs/store',             'LivreurController::store');
+$routes->post('livreurs/update/(:num)',     'LivreurController::update/$1');
+$routes->get ('livreurs/delete/(:num)',     'LivreurController::delete/$1');
+$routes->get ('livreurs/(:num)',            'LivreurController::detail/$1');
 
-// Route pour les abonnements (celle qui bloquait juste avant)
-$routes->get('abonnements', 'AbonnementController::index');
+// ── Transferts ────────────────────────────────────────
+$routes->get ('transferts',                   'TransfertController::index');
+$routes->get ('transferts/nouveau',             'TransfertController::nouveau');
+$routes->post('transferts/store',             'TransfertController::store');
+$routes->post('transferts/confirmer/(:num)',  'TransfertController::confirmer/$1');
+$routes->get ('transferts/annuler/(:num)',    'TransfertController::annuler/$1');

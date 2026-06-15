@@ -125,159 +125,226 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 
 <script>
-let scanner   = null;
-let barcodeActif = null;
+    let scanner   = null;
+    let barcodeActif = null;
 
-const BASE = '<?= base_url() ?>';
+    const BASE = '<?= base_url() ?>';
 
-// ── Switch tabs ──────────────────────────────────────
-function switchTab(tab) {
-    document.getElementById('tab_camera').classList.toggle('active', tab === 'camera');
-    document.getElementById('tab_manuel').classList.toggle('active', tab === 'manuel');
-    document.getElementById('zone_camera').classList.toggle('d-none', tab !== 'camera');
-    document.getElementById('zone_manuel').classList.toggle('d-none', tab !== 'manuel');
+    // ── Switch tabs ──────────────────────────────────────
+    function switchTab(tab) {
+        document.getElementById('tab_camera').classList.toggle('active', tab === 'camera');
+        document.getElementById('tab_manuel').classList.toggle('active', tab === 'manuel');
+        document.getElementById('zone_camera').classList.toggle('d-none', tab !== 'camera');
+        document.getElementById('zone_manuel').classList.toggle('d-none', tab !== 'manuel');
 
-    if (tab === 'camera') {
-        demarrerCamera();
-    } else {
-        arreterCamera();
-        document.getElementById('input_barcode').focus();
-    }
-}
-
-// ── Caméra QR ────────────────────────────────────────
-function demarrerCamera() {
-    if (scanner) return;
-    scanner = new Html5Qrcode("reader");
-    scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 150 } },
-        (decodedText) => {
+        if (tab === 'camera') {
+            demarrerCamera();
+        } else {
             arreterCamera();
-            traiterBarcode(decodedText);
-        },
-        () => {}
-    ).catch(() => {
-        document.getElementById('zone_camera').innerHTML =
-            '<div class="alert alert-warning">Caméra non disponible. Utilisez la saisie manuelle.</div>';
-    });
-}
-
-function arreterCamera() {
-    if (scanner) {
-        scanner.stop().catch(() => {});
-        scanner = null;
+            document.getElementById('input_barcode').focus();
+        }
     }
-}
 
-// Démarrer caméra au chargement
-demarrerCamera();
-
-// ── Saisie manuelle (Entrée) ─────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    const input = document.getElementById('input_barcode');
-    if (input) {
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') traiterBarcode(this.value);
+    // ── Caméra QR ────────────────────────────────────────
+    function demarrerCamera() {
+        if (scanner) return;
+        scanner = new Html5Qrcode("reader");
+        scanner.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 150 } },
+            (decodedText) => {
+                arreterCamera();
+                traiterBarcode(decodedText);
+            },
+            () => {}
+        ).catch(() => {
+            document.getElementById('zone_camera').innerHTML =
+                '<div class="alert alert-warning">Caméra non disponible. Utilisez la saisie manuelle.</div>';
         });
     }
-});
 
-// ── Traitement du barcode scané ──────────────────────
-function traiterBarcode(code) {
-    code = (code || '').trim();
-    if (!code) return;
-
-    barcodeActif = code;
-    document.getElementById('zone_resultat').classList.remove('d-none');
-    document.getElementById('zone_feedback').classList.add('d-none');
-
-    fetch(`${BASE}production/api/kanban`) // on réutilise articleDetail
-        .then(() => {}) // juste pour ne pas bloquer
-
-    // On charge le détail via barcode → avancer endpoint fait la vérif
-    afficherArticleParCode(code);
-}
-
-function afficherArticleParCode(barcode) {
-    // Appel à avancer en mode "preview" (GET simulé via POST avec flag)
-    fetch(`${BASE}production/avancer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded',
-                   'X-Requested-With': 'XMLHttpRequest' },
-        body: new URLSearchParams({
-            barcode:    barcode,
-            preview:    '1',
-            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (!data.article) {
-            afficherFeedback('danger', data.message || 'Article introuvable.');
-            return;
+    function arreterCamera() {
+        if (scanner) {
+            scanner.stop().catch(() => {});
+            scanner = null;
         }
-        const art = data.article;
-        document.getElementById('res_nom_article').textContent   = art.nom_libelle || '—';
-        document.getElementById('res_barcode').textContent       = art.barcode_unique || '';
-        document.getElementById('res_client').textContent        = art.nomclient || '—';
-        document.getElementById('res_bon').textContent           = art.code_commande || '—';
-        document.getElementById('res_prestation').textContent    = art.type_prestation || '—';
-        document.getElementById('res_retrait').textContent       = art.date_livraison_prevue
-            ? new Date(art.date_livraison_prevue).toLocaleDateString('fr-FR') : '—';
-        document.getElementById('res_etape_courante').textContent = art.etape_libelle || '—';
-        document.getElementById('res_express_badge').innerHTML    = parseInt(art.est_express)
-            ? '<span class="badge bg-danger">⚡ Express</span>' : '';
+    }
 
-        if (data.etape_suivante) {
-            document.getElementById('res_etape_suivante').textContent = data.etape_suivante.libelle;
-            document.getElementById('btn_avancer').disabled = false;
-        } else {
-            document.getElementById('res_etape_suivante').textContent = 'Dernière étape';
-            document.getElementById('btn_avancer').disabled = true;
+    // Démarrer caméra au chargement
+    demarrerCamera();
+
+    // ── Saisie manuelle (Entrée) ─────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('input_barcode');
+        if (input) {
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') traiterBarcode(this.value);
+            });
         }
-
-        document.getElementById('etape_courante_zone').style.background = art.etape_couleur + '22';
     });
-}
 
-// ── Avancer l'article ────────────────────────────────
-function avancerArticle() {
-    if (!barcodeActif) return;
+    // ── Traitement du barcode scané ──────────────────────
+    function traiterBarcode(code) {
+        code = (code || '').trim();
+        if (!code) return;
 
-    const btn = document.getElementById('btn_avancer');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>En cours...';
+        barcodeActif = code;
+        document.getElementById('zone_resultat').classList.remove('d-none');
+        document.getElementById('zone_feedback').classList.add('d-none');
 
-    fetch(`${BASE}production/avancer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded',
-                   'X-Requested-With': 'XMLHttpRequest' },
-        body: new URLSearchParams({
-            barcode: barcodeActif,
-            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+        fetch(`${BASE}production/api/kanban`) // on réutilise articleDetail
+            .then(() => {}) // juste pour ne pas bloquer
+
+        // On charge le détail via barcode → avancer endpoint fait la vérif
+        afficherArticleParCode(code);
+    }
+
+    function afficherArticleParCode(barcode) {
+        // Appel à avancer en mode "preview" (GET simulé via POST avec flag)
+        fetch(`${BASE}production/avancer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest' },
+            body: new URLSearchParams({
+                barcode:    barcode,
+                preview:    '1',
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+            })
         })
-    })
-    .then(r => r.json())
-    .then(data => {
+        .then(r => r.json())
+        .then(data => {
+            if (!data.article) {
+                afficherFeedback('danger', data.message || 'Article introuvable.');
+                return;
+            }
+            const art = data.article;
+            document.getElementById('res_nom_article').textContent   = art.nom_libelle || '—';
+            document.getElementById('res_barcode').textContent       = art.barcode_unique || '';
+            document.getElementById('res_client').textContent        = art.nomclient || '—';
+            document.getElementById('res_bon').textContent           = art.code_commande || '—';
+            document.getElementById('res_prestation').textContent    = art.type_prestation || '—';
+            document.getElementById('res_retrait').textContent       = art.date_livraison_prevue
+                ? new Date(art.date_livraison_prevue).toLocaleDateString('fr-FR') : '—';
+            document.getElementById('res_etape_courante').textContent = art.etape_libelle || '—';
+            document.getElementById('res_express_badge').innerHTML    = parseInt(art.est_express)
+                ? '<span class="badge bg-danger">⚡ Express</span>' : '';
+
+            if (data.etape_suivante) {
+                document.getElementById('res_etape_suivante').textContent = data.etape_suivante.libelle;
+                document.getElementById('btn_avancer').disabled = false;
+            } else {
+                document.getElementById('res_etape_suivante').textContent = 'Dernière étape';
+                document.getElementById('btn_avancer').disabled = true;
+            }
+
+            document.getElementById('etape_courante_zone').style.background = art.etape_couleur + '22';
+        });
+    }
+
+    // ── Avancer l'article ────────────────────────────────
+    function avancerArticle() {
+        if (!barcodeActif) return;
+
+        const btn = document.getElementById('btn_avancer');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>En cours...';
+
+        fetch(`${BASE}production/avancer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest' },
+            body: new URLSearchParams({
+                barcode: barcodeActif,
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                afficherFeedback('success', data.message);
+                // Recharger l'affichage avec le nouvel état
+                setTimeout(() => afficherArticleParCode(barcodeActif), 600);
+            } else {
+                afficherFeedback('danger', data.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-arrow-right me-2"></i>Réessayer';
+            }
+        });
+    }
+
+    function afficherFeedback(type, msg) {
+        const zone = document.getElementById('zone_feedback');
+        zone.className = `rounded-3 p-3 mb-3 alert alert-${type}`;
+        zone.innerHTML = msg;
+        zone.classList.remove('d-none');
+    }
+
+    function traiterReponse(data) {
+        const feedback = document.getElementById('feedback_scan');
+        const input    = document.getElementById('input_barcode');
+
+        if (!feedback) return;
+
         if (data.success) {
-            afficherFeedback('success', data.message);
-            // Recharger l'affichage avec le nouvel état
-            setTimeout(() => afficherArticleParCode(barcodeActif), 600);
-        } else {
-            afficherFeedback('danger', data.message);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-arrow-right me-2"></i>Réessayer';
-        }
-    });
-}
+            // Succès — afficher en vert
+            feedback.className = 'alert alert-success rounded-3 shadow-sm mt-3';
+            feedback.innerHTML = `
+                <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-check-circle fa-2x text-success"></i>
+                    <div>
+                        <div class="fw-bold">${data.message}</div>
+                        <div class="text-muted small">→ ${data.etape_suivante}</div>
+                        ${data.est_pret
+                            ? `<div class="mt-1 text-success fw-semibold">
+                                <i class="fas fa-bell me-1"></i>
+                                Le client a été notifié — dépôt transmis à la caisse.
+                            </div>`
+                            : ''}
+                    </div>
+                </div>`;
 
-function afficherFeedback(type, msg) {
-    const zone = document.getElementById('zone_feedback');
-    zone.className = `rounded-3 p-3 mb-3 alert alert-${type}`;
-    zone.innerHTML = msg;
-    zone.classList.remove('d-none');
-}
+        } else if (data.bloque) {
+            // Bloqué — article déjà prêt, afficher en orange
+            feedback.className = 'alert alert-warning rounded-3 shadow-sm mt-3';
+            feedback.innerHTML = `
+                <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-hand-paper fa-2x text-warning"></i>
+                    <div>
+                        <div class="fw-bold">${data.message}</div>
+                        <div class="mt-2">
+                            <a href="${BASE_URL}depot/prets"
+                            class="btn btn-sm btn-warning rounded-2 px-3">
+                                <i class="fas fa-cash-register me-1"></i>
+                                Aller à la caisse →
+                            </a>
+                        </div>
+                    </div>
+                </div>`;
+
+        } else {
+            // Erreur — afficher en rouge
+            feedback.className = 'alert alert-danger rounded-3 shadow-sm mt-3';
+            feedback.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-exclamation-circle text-danger"></i>
+                    <span>${data.message}</span>
+                </div>`;
+        }
+
+        feedback.classList.remove('d-none');
+
+        // Vider et refocaliser le champ
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+
+        // Masquer le feedback après 5 secondes (sauf si bloqué)
+        if (data.success && !data.est_pret) {
+            setTimeout(() => feedback.classList.add('d-none'), 5000);
+        }
+    }
+
 </script>
 
 <?= $this->endSection() ?>

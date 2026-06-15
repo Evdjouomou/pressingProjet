@@ -40,44 +40,6 @@ class ProductionController extends BaseController
             ->get()->getRowArray();
     }
 
-    private function recalculerStatutDepot(int $idDepot): void
-    {
-        $db = \Config\Database::connect();
-
-        $articles = $db->table('depot_articles da')
-            ->select('da.etape_courante_id, ep.ordre, ep.libelle')
-            ->join('etapes_production ep', 'ep.id_etape = da.etape_courante_id', 'left')
-            ->where('da.depot_id', $idDepot)
-            ->get()->getResultArray();
-
-        if (empty($articles)) return;
-
-        $ordres    = array_column($articles, 'ordre');
-        $minOrdre  = min($ordres);
-        $maxEtapes = \Config\Database::connect()
-            ->table('etapes_production')
-            ->selectMax('ordre', 'max_ordre')
-            ->get()->getRowArray();
-
-        $dernierOrdre = (int) ($maxEtapes['max_ordre'] ?? 8);
-
-        // Statut global = étape la moins avancée parmi tous les articles
-        if ($minOrdre >= $dernierOrdre) {
-            $statutGlobal = 'livre';
-        } elseif ($minOrdre >= 7) {
-            $statutGlobal = 'pret';
-        } elseif ($minOrdre >= 2) {
-            $statutGlobal = 'en_cours';
-        } else {
-            $statutGlobal = 'depot';
-        }
-
-        $db->table('depots')->where('id_depot', $idDepot)->update([
-            'statut_global' => $statutGlobal,
-            'updated_at'    => date('Y-m-d H:i:s'),
-        ]);
-    }
-
     // ═══════════════════════════════════════════
     // KANBAN GÉRANT
     // ═══════════════════════════════════════════
@@ -108,7 +70,7 @@ class ProductionController extends BaseController
                         dp.options_express, dp.prix_applique,
                         s.type_prestation,
                         d.code_commande, d.date_livraison_prevue,
-                        c.nomclient,
+                        c.nomclient, e_op.nom_complet AS dernier_operateur,
                         TIMESTAMPDIFF(MINUTE, aw.date_entree, NOW()) AS minutes_en_cours
                     ')
                     ->join('libelles l',           'l.id_libelle = da.libelle_id')
@@ -118,6 +80,7 @@ class ProductionController extends BaseController
                     ->join('clients c',             'c.id_client = d.client_id')
                     ->join('article_workflow aw',   'aw.article_depose_id = da.id_article_depose
                                                      AND aw.date_sortie IS NULL', 'left')
+                    ->join('employes e_op',       'e_op.id_employe = aw.employe_id', 'left')
                     ->where('da.etape_courante_id', $etape['id_etape'])
                     ->orderBy('dp.options_express', 'DESC')
                     ->orderBy('d.date_livraison_prevue', 'ASC')
@@ -204,95 +167,193 @@ class ProductionController extends BaseController
 
     // POST — avancer un article à l'étape suivante
     public function avancer()
-    {
-        $db      = \Config\Database::connect();
-        $barcode = trim($this->request->getPost('barcode') ?? '');
+{
+    $db  = \Config\Database::connect();
+    $now = date('Y-m-d H:i:s');
 
-        if (empty($barcode)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Code-barres vide.']);
-        }
+    $barcode = trim(
+        $this->request->getPost('barcode') 
+        ?? $this->request->getGet('barcode') 
+        ?? ''
+    );
+    $preview = $this->request->getPost('preview') === '1';
 
-        $article = $this->getArticleByBarcode($barcode);
-
-        if (!$article) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Article introuvable : ' . $barcode]);
-        }
-
-        // Trouver l'étape suivante
-        $etapeSuivante = $db->table('etapes_production')
-            ->where('ordre >', $article['etape_ordre'] ?? 0)
-            ->where('est_actif', 1)
-            ->orderBy('ordre', 'ASC')
-            ->limit(1)
-            ->get()->getRowArray();
-
-        if (!$etapeSuivante) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Cet article est déjà à la dernière étape.',
-                'article' => $article,
-            ]);
-        }
-
-        $now = date('Y-m-d H:i:s');
-
-        $db->transStart();
-
-        // 1. Clôturer l'entrée workflow courante
-        $workflowCourant = $db->table('article_workflow')
-            ->where('article_depose_id', $article['id_article_depose'])
-            ->where('date_sortie', null)
-            ->orderBy('date_entree', 'DESC')
-            ->limit(1)
-            ->get()->getRowArray();
-
-        if ($workflowCourant) {
-            $duree = (int) round(
-                (strtotime($now) - strtotime($workflowCourant['date_entree'])) / 60
-            );
-            $db->table('article_workflow')
-               ->where('id_workflow', $workflowCourant['id_workflow'])
-               ->update(['date_sortie' => $now, 'duree_reelle_min' => $duree]);
-        }
-
-        // 2. Créer l'entrée workflow pour la nouvelle étape
-        $db->table('article_workflow')->insert([
-            'article_depose_id' => $article['id_article_depose'],
-            'etape_id'          => $etapeSuivante['id_etape'],
-            'date_entree'       => $now,
-        ]);
-
-        // 3. Mettre à jour l'étape courante sur l'article
-        $db->table('depot_articles')
-           ->where('id_article_depose', $article['id_article_depose'])
-           ->update(['etape_courante_id' => $etapeSuivante['id_etape']]);
-
-        $db->transComplete();
-
-        if ($db->transStatus() === false) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Erreur base de données.']);
-        }
-
-        // 4. Recalculer le statut global du dépôt
-        $this->recalculerStatutDepot($article['depot_id']);
-
-        // Si tous les articles du dépôt sont prêts → notifier le client
-        $depotMaj = $db->table('depots')->where('id_depot', $article['depot_id'])->get()->getRowArray();
-        if ($depotMaj && $depotMaj['statut_global'] === 'pret') {
-            $notif = new \App\Services\NotificationService();
-            $notif->commandePrete($article['depot_id']);
-        }
-
-        // Recharger l'article mis à jour
-        $articleMaj = $this->getArticleByBarcode($barcode);
-
+    if (!$barcode) {
         return $this->response->setJSON([
-            'success'       => true,
-            'message'       => '✅ ' . $article['nom_libelle'] . ' → ' . $etapeSuivante['libelle'],
-            'etape_suivante' => $etapeSuivante,
-            'article'       => $articleMaj,
+            'success' => false,
+            'message' => 'Code-barres manquant.'
         ]);
     }
+
+    // ── Récupérer l'article ───────────────────────────────────
+    $article = $db->query("
+        SELECT da.*,
+               ep.libelle  AS etape_libelle,
+               ep.ordre    AS etape_ordre,
+               ep.couleur  AS etape_couleur,
+               ep.id_etape AS etape_id,
+               d.code_commande,
+               d.id_depot,
+               d.date_livraison_prevue,
+               c.nomclient,
+               dp.options_express AS est_express,
+               s.type_prestation
+        FROM depot_articles da
+        LEFT JOIN etapes_production ep ON ep.id_etape = da.etape_courante_id
+        JOIN depots d   ON d.id_depot   = da.depot_id
+        JOIN clients c  ON c.id_client  = d.client_id
+        LEFT JOIN depot_prestations dp ON dp.article_depose_id = da.id_article_depose
+        LEFT JOIN services s           ON s.id_service = dp.service_id
+        WHERE da.barcode_unique = ?
+        LIMIT 1
+    ", [$barcode])->getRowArray();
+
+    if (!$article) {
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Article introuvable : ' . $barcode
+        ]);
+    }
+
+    // ── Étape "Prêt à retirer" (ordre 7) ─────────────────────
+    $etapePret = $db->query(
+        "SELECT * FROM etapes_production 
+         WHERE ordre = 7 AND est_actif = 1 
+         LIMIT 1"
+    )->getRowArray();
+
+    // ── Étape suivante ────────────────────────────────────────
+    $etapeSuivante = $db->query(
+        "SELECT * FROM etapes_production 
+         WHERE ordre > ? AND est_actif = 1 
+         ORDER BY ordre ASC LIMIT 1",
+        [(int)$article['etape_ordre']]
+    )->getRowArray();
+
+    // ── Bloquer si déjà à "Prêt à retirer" ou au-delà ────────
+    $ordrePret = $etapePret ? (int)$etapePret['ordre'] : 7;
+    if ((int)$article['etape_ordre'] >= $ordrePret) {
+        return $this->response->setJSON([
+            'success'  => false,
+            'bloque'   => true,
+            'article'  => $article,
+            'message'  => '⛔ Cet article est déjà <strong>Prêt à retirer</strong>. '
+                        . 'Le retrait est géré par la caisse.',
+        ]);
+    }
+
+    // ── Bloquer si l'étape suivante dépasse "Prêt à retirer" ──
+    if ($etapeSuivante && (int)$etapeSuivante['ordre'] > $ordrePret) {
+        $etapeSuivante = $etapePret; // on plafonne à "Prêt à retirer"
+    }
+
+    // ── MODE PREVIEW : retourner les infos sans avancer ───────
+    if ($preview) {
+        return $this->response->setJSON([
+            'success'       => true,
+            'article'       => $article,
+            'etape_suivante'=> $etapeSuivante,
+        ]);
+    }
+
+    // ── Vérifier qu'il y a une étape suivante ─────────────────
+    if (!$etapeSuivante) {
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Aucune étape suivante disponible.'
+        ]);
+    }
+
+    // ── Avancer l'article ─────────────────────────────────────
+    $db->transStart();
+
+    // Clôturer le workflow actuel
+    $db->query("
+        UPDATE article_workflow
+        SET date_sortie      = ?,
+            duree_reelle_min = TIMESTAMPDIFF(MINUTE, date_entree, ?)
+        WHERE article_depose_id = ?
+          AND date_sortie IS NULL
+    ", [$now, $now, $article['id_article_depose']]);
+
+    // Créer le workflow pour la nouvelle étape
+    $db->table('article_workflow')->insert([
+        'article_depose_id' => $article['id_article_depose'],
+        'etape_id'          => $etapeSuivante['id_etape'],
+        'employe_id'        => employe_connecte_id(),
+        'date_entree'       => $now,
+    ]);
+
+    // Mettre à jour l'étape courante
+    $db->table('depot_articles')
+        ->where('id_article_depose', $article['id_article_depose'])
+        ->update(['etape_courante_id' => $etapeSuivante['id_etape']]);
+
+    // Recalculer le statut du dépôt
+    $this->recalculerStatutDepot($article['id_depot'], $db, $etapePret);
+
+    $db->transComplete();
+
+    if ($db->transStatus() === false) {
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Erreur lors de la mise à jour.'
+        ]);
+    }
+
+    // ── Notification si dépôt vient de passer "Prêt" ──────────
+    $depotMaj = $db->table('depots')
+        ->where('id_depot', $article['id_depot'])
+        ->get()->getRowArray();
+
+    if ($depotMaj
+        && $depotMaj['statut_global'] === 'pret'
+        && empty($depotMaj['notif_pret_envoyee'])) {
+
+        $notif = new \App\Services\NotificationService();
+        $notif->commandePrete($article['id_depot']);
+
+        $db->table('depots')
+            ->where('id_depot', $article['id_depot'])
+            ->update(['notif_pret_envoyee' => 1]);
+    }
+
+    return $this->response->setJSON([
+        'success'        => true,
+        'message'        => '✅ ' . $article['nomclient']
+                          . ' — ' . $article['code_commande']
+                          . ' : avancé vers <strong>'
+                          . $etapeSuivante['libelle'] . '</strong>',
+        'etape_suivante' => $etapeSuivante['libelle'],
+        'est_pret'       => ((int)$etapeSuivante['ordre'] === $ordrePret),
+    ]);
+}
+
+// ─────────────────────────────────────────────────────────────
+private function recalculerStatutDepot(int $idDepot, $db, ?array $etapePret): void
+{
+    $result = $db->query("
+        SELECT MIN(ep.ordre) AS ordre_min
+        FROM depot_articles da
+        LEFT JOIN etapes_production ep ON ep.id_etape = da.etape_courante_id
+        WHERE da.depot_id = ?
+    ", [$idDepot])->getRowArray();
+
+    if (!$result || $result['ordre_min'] === null) return;
+
+    $ordreMin  = (int) $result['ordre_min'];
+    $ordrePret = $etapePret ? (int)$etapePret['ordre'] : 7;
+
+    if ($ordreMin <= 1)          $statut = 'depot';
+    elseif ($ordreMin < $ordrePret) $statut = 'en_cours';
+    else                            $statut = 'pret';
+
+    $db->query("
+        UPDATE depots 
+        SET statut_global = ?, updated_at = ?
+        WHERE id_depot = ? AND statut_global NOT IN ('livre', 'annule')
+    ", [$statut, date('Y-m-d H:i:s'), $idDepot]);
+}
 
     // Détail d'un article (pour la modal scan)
     public function articleDetail(int $id)

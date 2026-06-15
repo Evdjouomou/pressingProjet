@@ -26,100 +26,101 @@ class EmployeController extends BaseController
     // CRÉER
     // ═══════════════════════════════════════════
     public function store()
-{
-    $model    = new EmployeModel();
-    $matricule = 'EMP-' . strtoupper(substr(uniqid(), -6));
-    $passwordClair = 'pressing2024'; 
+    {
+        $model    = new EmployeModel();
+        $matricule = 'EMP-' . strtoupper(substr(uniqid(), -6));
+        $passwordClair = 'pressing2024'; 
 
-    $data = [
-        'matricule'      => $matricule,
-        'password'       => password_hash($passwordClair, PASSWORD_DEFAULT),
-        'nom_complet'    => $this->request->getPost('nom_complet'),
-        'email'          => $this->request->getPost('email'),
-        'telephone'      => $this->request->getPost('telephone'),
-        'num_cni'        => $this->request->getPost('num_cni'),
-        'num_urgence'    => $this->request->getPost('num_urgence'),
-        'lieu_residence' => $this->request->getPost('lieu_residence'),
-        'shop_id'        => $this->request->getPost('shop_id'),
-        'poste_id'       => $this->request->getPost('poste_id'),
-        'role'           => $this->request->getPost('role'),
-        'status'         => $this->request->getPost('status') ?: 'Actif',
-        'created_at'     => date('Y-m-d H:i:s'),
-    ];
-
-    $photo = $this->request->getFile('photo');
-    if ($photo && $photo->isValid() && !$photo->hasMoved()) {
-        $nom = $photo->getRandomName();
-        $photo->move(ROOTPATH . 'public/img', $nom);
-        $data['photo'] = $nom;
-    }
-
-    if ($model->insert($data)) {
-        
-        // ─── CONFIGURATION DIRECTE DE L'EMAIL ────────────────
-        $config = [
-            'protocol'   => 'smtp',
-            'SMTPHost'   => 'smtp.gmail.com',            // Modifie si ce n'est pas Gmail
-            'SMTPUser'   => 'kemadjouyann11@gmail.com', // METS TON EMAIL ICI
-            'SMTPPass'   => 'ydup uucz tewq zlln',// METS TON MOT DE PASSE ICI
-            'SMTPPort'   => 465,
-            'SMTPCrypto' => 'ssl',
-            'mailType'   => 'html',                      // Pour accepter les balises HTML du message
-            'charset'    => 'UTF-8',
-            'newline'    => "\r\n"
+        $data = [
+            'matricule'      => $matricule,
+            'password'       => password_hash($passwordClair, PASSWORD_DEFAULT),
+            'nom_complet'    => $this->request->getPost('nom_complet'),
+            'email'          => $this->request->getPost('email'),
+            'telephone'      => $this->request->getPost('telephone'),
+            'num_cni'        => $this->request->getPost('num_cni'),
+            'num_urgence'    => $this->request->getPost('num_urgence'),
+            'lieu_residence' => $this->request->getPost('lieu_residence'),
+            'shop_id'        => $this->request->getPost('shop_id'),
+            'poste_id'       => $this->request->getPost('poste_id'),
+            'role'           => $this->request->getPost('role'),
+            'status'         => $this->request->getPost('status') ?: 'Actif',
+            'created_at'     => date('Y-m-d H:i:s'),
         ];
 
-        $emailService = \Config\Services::email();
-        $emailService->initialize($config); // On applique la configuration
-        // ─────────────────────────────────────────────────────
-
-        $emailDestination = $data['email'];
-        $nomComplet       = $data['nom_complet'];
-        $posteId          = $data['poste_id'];
-
-        $emailService->setFrom($config['SMTPUser'], 'Pressing Pro');
-        $emailService->setTo($emailDestination);
-        $emailService->setSubject('Création de votre compte - Pressing Pro');
-
-       $message = "
-            <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                <h2 style='color: #4B6BFB;'>Bienvenue dans l'équipe, " . esc($nomComplet) . " !</h2>
-                <p>Votre compte employé a été créé avec succès dans le système de gestion du pressing.</p>
-                <p>Voici vos identifiants personnels pour vous connecter à l'application :</p>
-                <table style='background: #f4f6f9; padding: 15px; border-radius: 5px; width: 100%;'>
-                    <tr>
-                        <td><strong>Identifiant / Matricule :</strong></td>
-                        <td><code style='background: #fff; padding: 2px 6px; border: 1px solid #ddd;'>" . esc($matricule) . "</code></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Mot de passe par défaut :</strong></td>
-                        <td><code style='background: #fff; padding: 2px 6px; border: 1px solid #ddd;'>" . esc($passwordClair) . "</code></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Identifiant Poste (ID) :</strong></td>
-                        <td>" . esc($posteId) . "</td>
-                    </tr>
-                </table>
-                <p style='margin-top: 15px;'>⚠️ <em>Par mesure de sécurité, nous vous recommandons vivement de modifier ce mot de passe dès votre première connexion.</em></p>
-                <br>
-                <p>Cordialement,<br><strong>L'équipe de Direction</strong></p>
-            </div>
-        ";
-
-        $emailService->setMessage($message);
-
-        if ($emailService->send()) {
-            $statutEmail = " et e-mail de bienvenue envoyé à " . $emailDestination;
-        } else {
-            $statutEmail = " mais l'envoi de l'e-mail a échoué. Erreur : " . $emailService->printDebugger(['headers']);
+        $photo = $this->request->getFile('photo');
+        if ($photo && $photo->isValid() && !$photo->hasMoved()) {
+            $nom = $photo->getRandomName();
+            $photo->move(ROOTPATH . 'public/img', $nom);
+            $data['photo'] = $nom;
         }
 
-        return redirect()->to('personnel')
-                         ->with('success', 'Employé enregistré avec succès. Matricule : ' . $matricule . $statutEmail);
-    }
+        if ($model->insert($data)) {
+            
+            // ─── CONFIGURATION DIRECTE DE L'EMAIL ────────────────
+            $config = [
+                'protocol'   => 'smtp',
+                'SMTPHost'   => 'smtp.gmail.com',            // Modifie si ce n'est pas Gmail
+                'SMTPUser'   => 'kemadjouyann11@gmail.com', // METS TON EMAIL ICI
+                'SMTPPass'   => 'ydup uucz tewq zlln',// METS TON MOT DE PASSE ICI
+                'SMTPPort'   => 465,
+                'SMTPCrypto' => 'ssl',
+                'mailType'   => 'html',                      // Pour accepter les balises HTML du message
+                'charset'    => 'UTF-8',
+                'newline'    => "\r\n"
+            ];
 
-    return redirect()->to('personnel')->with('error', 'Impossible d\'enregistrer l\'employé.');
-}
+            $emailService = \Config\Services::email();
+            $emailService->initialize($config); // On applique la configuration
+            // ─────────────────────────────────────────────────────
+
+            $emailDestination = $data['email'];
+            $nomComplet       = $data['nom_complet'];
+            $posteId          = $data['poste_id'];
+
+            $emailService->setFrom($config['SMTPUser'], 'Pressing Pro');
+            $emailService->setTo($emailDestination);
+            $emailService->setSubject('Création de votre compte - Pressing Pro');
+
+        $message = "
+                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                    <h2 style='color: #4B6BFB;'>Bienvenue dans l'équipe, " . esc($nomComplet) . " !</h2>
+                    <p>Votre compte employé a été créé avec succès dans le système de gestion du pressing.</p>
+                    <p>Voici vos identifiants personnels pour vous connecter à l'application :</p>
+                    <table style='background: #f4f6f9; padding: 15px; border-radius: 5px; width: 100%;'>
+                        <tr>
+                            <td><strong>Identifiant / Matricule :</strong></td>
+                            <td><code style='background: #fff; padding: 2px 6px; border: 1px solid #ddd;'>" . esc($matricule) . "</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mot de passe par défaut :</strong></td>
+                            <td><code style='background: #fff; padding: 2px 6px; border: 1px solid #ddd;'>" . esc($passwordClair) . "</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Identifiant Poste (ID) :</strong></td>
+                            <td>" . esc($posteId) . "</td>
+                        </tr>
+                    </table>
+                    <p style='margin-top: 15px;'>⚠️ <em>Par mesure de sécurité, nous vous recommandons vivement de modifier ce mot de passe dès votre première connexion.</em></p>
+                    <br>
+                    <p>Cordialement,<br><strong>L'équipe de Direction</strong></p>
+                </div>
+            ";
+
+            $emailService->setMessage($message);
+
+            if ($emailService->send()) {
+                $statutEmail = " et e-mail de bienvenue envoyé à " . $emailDestination;
+            } else {
+                $statutEmail = " mais l'envoi de l'e-mail a échoué. Erreur : " . $emailService->printDebugger(['headers']);
+            }
+
+            return redirect()->to('personnel')
+                            ->with('success', 'Employé enregistré avec succès. Matricule : ' . $matricule . $statutEmail);
+        }
+
+        return redirect()->to('personnel')->with('error', 'Impossible d\'enregistrer l\'employé.');
+    }
+    
     public function delete(int $id)
     {
         (new EmployeModel())->delete($id);
@@ -320,52 +321,52 @@ class EmployeController extends BaseController
             'mois'  => $mois,
         ]);
     }
-         public function changementMotDePasse()
-       {
-             // Sécurité : Si l'ID temporaire n'est pas en session, on le renvoie au login
-            if (!session()->has('temp_employe_id')) {
-             return redirect()->to('/');
-                                                    }
 
-            return view('pages/personnel/changement_password'); // On va créer cette vue à l'étape 4
-       }
-
-            public function updatePremierPassword()
-{
-    // Sécurité : On vérifie si la session temporaire existe toujours
-    if (!session()->has('temp_employe_id')) {
-        return redirect()->to('/')->with('error', 'Votre session a expiré. Veuillez vous reconnecter.');
+    public function changementMotDePasse()
+    {
+        // Sécurité : Si l'ID temporaire n'est pas en session, on le renvoie au login
+        if (!session()->has('temp_employe_id')) {
+            return redirect()->to('/');
+        }
+        return view('pages/personnel/changement_password'); // On va créer cette vue à l'étape 4
     }
 
-    $idEmploye = session()->get('temp_employe_id');
-    $password  = $this->request->getPost('new_password');
-    $confirm   = $this->request->getPost('confirm_password');
+    public function updatePremierPassword()
+    {
+        // Sécurité : On vérifie si la session temporaire existe toujours
+        if (!session()->has('temp_employe_id')) {
+            return redirect()->to('/')->with('error', 'Votre session a expiré. Veuillez vous reconnecter.');
+        }
 
-    // 1. Validation des champs
-    if (empty($password) || strlen($password) < 6) {
-        return redirect()->back()->with('error', 'Le mot de passe doit contenir au moins 6 caractères.');
-    }
+        $idEmploye = session()->get('temp_employe_id');
+        $password  = $this->request->getPost('new_password');
+        $confirm   = $this->request->getPost('confirm_password');
 
-    if ($password !== $confirm) {
-        return redirect()->back()->with('error', 'Les deux mots de passe ne correspondent pas.');
-    }
+        // 1. Validation des champs
+        if (empty($password) || strlen($password) < 6) {
+            return redirect()->back()->with('error', 'Le mot de passe doit contenir au moins 6 caractères.');
+        }
 
-    // 2. Mise à jour sécurisée en base de données
-    $model = new \App\Models\EmployeModel();
-    
-    $updated = $model->update($idEmploye, [
-        'password'           => password_hash($password, PASSWORD_DEFAULT),
-        'premiere_connexion' => 0
-    ]);
+        if ($password !== $confirm) {
+            return redirect()->back()->with('error', 'Les deux mots de passe ne correspondent pas.');
+        }
 
-    if ($updated) {
-        // Nettoyage de la session temporaire uniquement si la mise à jour a réussi
-        session()->remove('temp_employe_id');
+        // 2. Mise à jour sécurisée en base de données
+        $model = new \App\Models\EmployeModel();
         
-        // Redirection propre vers la page de connexion avec message de succès
-        return redirect()->to('/')->with('success', 'Votre mot de passe a été configuré avec succès ! Connectez-vous avec votre nouveau mot de passe.');
-    } else {
-        return redirect()->back()->with('error', 'Impossible de mettre à jour le mot de passe en base de données.');
+        $updated = $model->update($idEmploye, [
+            'password'           => password_hash($password, PASSWORD_DEFAULT),
+            'premiere_connexion' => 0
+        ]);
+
+        if ($updated) {
+            // Nettoyage de la session temporaire uniquement si la mise à jour a réussi
+            session()->remove('temp_employe_id');
+            
+            // Redirection propre vers la page de connexion avec message de succès
+            return redirect()->to('/')->with('success', 'Votre mot de passe a été configuré avec succès ! Connectez-vous avec votre nouveau mot de passe.');
+        } else {
+            return redirect()->back()->with('error', 'Impossible de mettre à jour le mot de passe en base de données.');
+        }
     }
-}
 }

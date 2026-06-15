@@ -87,6 +87,7 @@ class RetoucheController extends BaseController
             'delai_estime'      => $this->request->getPost('delai_estime') ?: null,
             'statut'            => 'en_attente',
             'observations'      => $this->request->getPost('observations'),
+            'enregistre_par'    => employe_connecte_id(),
             'created_at'        => $now,
             'updated_at'        => $now,
         ]);

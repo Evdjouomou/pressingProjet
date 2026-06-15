@@ -162,7 +162,7 @@
 
         <?php if (session()->getFlashdata('info')): ?>
             <div class="alert alert-info">
-                <i class="bi bi-info-circle-fill"></i> <span><?= session()->getFlashdata('info') ?></span>
+                <i class="bi bi-info-circle-fill"></i> <span><?= htmlspecialchars((string)session()->getFlashdata('info')) ?></span>
             </div>
         <?php endif; ?>
 

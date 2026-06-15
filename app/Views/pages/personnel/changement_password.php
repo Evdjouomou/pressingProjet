@@ -18,7 +18,7 @@
                         <div class="alert alert-danger"><?= session()->getFlashdata('error') ?></div>
                     <?php endif; ?>
 
-                    <form action="http://localhost:8080/index.php/personnel/update-premier-password" method="POST">
+                    <form action="<?= site_url('personnel/update-premier-password') ?>" method="POST">
                         <?= csrf_field() ?>
                         
                         <div class="mb-3">

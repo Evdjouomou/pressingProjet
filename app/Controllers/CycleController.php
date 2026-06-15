@@ -243,15 +243,20 @@ class CycleController extends BaseController
     // ═══════════════════════════════════════════
     public function apiArticleParBarcode(string $barcode)
     {
-        $db  = \Config\Database::connect();
+        $db = \Config\Database::connect();
+
+        // Nettoyer le barcode reçu
+        $barcode = trim(urldecode($barcode));
+
+        // Recherche exacte d'abord
         $art = $db->table('depot_articles da')
             ->select('da.id_article_depose, da.barcode_unique,
-                      da.designation_libre, da.observations,
-                      l.nom_libelle,
-                      d.code_commande, d.id_depot,
-                      c.nomclient,
-                      ep.libelle AS etape_libelle,
-                      dp.options_express')
+                    da.designation_libre, da.observations,
+                    l.nom_libelle,
+                    d.code_commande, d.id_depot,
+                    c.nomclient,
+                    ep.libelle AS etape_libelle,
+                    dp.options_express')
             ->join('libelles l',          'l.id_libelle = da.libelle_id')
             ->join('depots d',            'd.id_depot = da.depot_id')
             ->join('clients c',           'c.id_client = d.client_id')
@@ -260,11 +265,44 @@ class CycleController extends BaseController
             ->where('da.barcode_unique', $barcode)
             ->get()->getRowArray();
 
+        // Si pas trouvé, essayer sans tenir compte de la casse
         if (!$art) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Article introuvable : ' . $barcode]);
+            $art = $db->table('depot_articles da')
+                ->select('da.id_article_depose, da.barcode_unique,
+                        da.designation_libre, da.observations,
+                        l.nom_libelle,
+                        d.code_commande, d.id_depot,
+                        c.nomclient,
+                        ep.libelle AS etape_libelle,
+                        dp.options_express')
+                ->join('libelles l',          'l.id_libelle = da.libelle_id')
+                ->join('depots d',            'd.id_depot = da.depot_id')
+                ->join('clients c',           'c.id_client = d.client_id')
+                ->join('etapes_production ep','ep.id_etape = da.etape_courante_id', 'left')
+                ->join('depot_prestations dp','dp.article_depose_id = da.id_article_depose', 'left')
+                ->where('UPPER(da.barcode_unique)', strtoupper($barcode))
+                ->get()->getRowArray();
         }
 
-        return $this->response->setJSON(['success' => true, 'article' => $art]);
+        if (!$art) {
+            // Debug : afficher ce qui existe en base pour aider
+            $existants = $db->table('depot_articles')
+                ->select('barcode_unique')
+                ->orderBy('id_article_depose', 'DESC')
+                ->limit(5)
+                ->get()->getResultArray();
+
+            return $this->response->setJSON([
+                'success'   => false,
+                'message'   => 'Article introuvable : ' . $barcode,
+                'debug_barcodes' => array_column($existants, 'barcode_unique'),
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'article' => $art
+        ]);
     }
 
     // ═══════════════════════════════════════════

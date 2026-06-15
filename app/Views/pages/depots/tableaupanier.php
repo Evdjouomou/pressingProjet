@@ -164,8 +164,6 @@ $caissePourVue = $db->table('caisses')
 </div>
 
 <script>
-// État caisse transmis depuis PHP
-const caisseOuverte = <?= $caissePourVue ? 'true' : 'false' ?>;
 
 function initFormulaire() {
     document.getElementById('formFinal').addEventListener('submit', function (e) {

@@ -86,6 +86,8 @@ class IncidentController extends BaseController
             'gravite'           => $this->request->getPost('gravite'),
             'delai_resolution'  => $this->request->getPost('delai_resolution') ?: null,
             'statut'            => 'ouvert',
+            'declare_par'    => employe_connecte_id(),
+            'enregistre_par'    => employe_connecte_id(),
             'created_at'        => $now,
             'updated_at'        => $now,
         ]);

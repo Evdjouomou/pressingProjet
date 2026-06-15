@@ -2,140 +2,150 @@
 <?= $this->section('content') ?>
 
 <style>
-.pos-grid { display:grid; grid-template-columns:1fr 380px; gap:20px; height:calc(100vh - 120px); }
-.pos-left  { overflow-y:auto; }
-.pos-right { display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
-.cmd-card  { cursor:pointer; border:2px solid transparent; transition:.15s; border-radius:12px; }
-.cmd-card:hover   { border-color:#3b82f6; box-shadow:0 4px 12px rgba(59,130,246,.15); }
-.cmd-card.active  { border-color:#3b82f6; background:#eff6ff; }
-.prod-card { cursor:pointer; border:2px solid transparent; border-radius:10px; transition:.15s; }
-.prod-card:hover  { border-color:#10b981; }
-@media(max-width:900px) { .pos-grid { grid-template-columns:1fr; height:auto; } }
+    .pos-layout {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 16px;
+        height: calc(100vh - 80px);
+    }
+    @media (max-width: 992px) {
+        .pos-layout { grid-template-columns: 1fr; height: auto; }
+    }
+    .pos-left  { overflow-y: auto; }
+    .pos-right {
+        background: #1a1a2e;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .commande-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: all .15s;
+    }
+    .commande-card:hover,
+    .commande-card.active {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px #bfdbfe;
+    }
+    .produit-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 10px;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        text-align: center;
+        transition: all .15s;
+        font-size: 12px;
+    }
+    .produit-card:hover { border-color: #10b981; box-shadow: 0 0 0 2px #d1fae5; }
+    .mode-btn { cursor: pointer; transition: all .15s; }
+    .mode-btn.active { background: #3b82f6 !important; color: #fff !important; }
 </style>
 
 <div class="container-fluid py-3">
 
-    <?php if (session()->getFlashdata('success')): ?>
-        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3 mb-3">
-            <i class="fas fa-check-circle me-2"></i><?= session()->getFlashdata('success') ?>
-            <button class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
-    <?php if (session()->getFlashdata('error')): ?>
-        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-3">
-            <i class="fas fa-exclamation-circle me-2"></i><?= session()->getFlashdata('error') ?>
-            <button class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
-
-    <!-- Barre supérieure -->
+    <!-- En-tête -->
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div class="d-flex align-items-center gap-3">
-            <h4 class="fw-bold mb-0"><i class="fas fa-cash-register text-primary me-2"></i>Point de Vente</h4>
-            <?php if ($caisse): ?>
-                <span style="background:#dcfce7;color:#166534;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;">
-                    <i class="fas fa-circle fa-xs me-1"></i>Caisse ouverte — <?= number_format($caisse['fond_ouverture'],0,',',' ') ?> FCFA fond
-                </span>
-            <?php else: ?>
-                <span style="background:#fee2e2;color:#991b1b;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;">
-                    <i class="fas fa-exclamation-circle me-1"></i>Caisse fermée
-                </span>
-            <?php endif; ?>
+            <h4 class="fw-bold mb-0">
+                <i class="fas fa-cash-register text-primary me-2"></i>Point de Vente
+            </h4>
+            <span class="badge rounded-pill px-3 py-2"
+                  style="background:#dcfce7;color:#166534;font-size:12px;">
+                ● Caisse ouverte — <?= number_format($caisse['fond_ouverture'], 0, ',', ' ') ?> FCFA fond
+            </span>
         </div>
         <div class="d-flex gap-2">
             <a href="<?= base_url('pos/caisse') ?>" class="btn btn-outline-secondary btn-sm rounded-2">
                 <i class="fas fa-cash-register me-1"></i>Caisse
             </a>
-            <a href="<?= base_url('pos/produits') ?>" class="btn btn-outline-secondary btn-sm rounded-2">
+            <a href="<?= base_url('stocks') ?>" class="btn btn-outline-primary btn-sm rounded-2">
                 <i class="fas fa-box me-1"></i>Produits
             </a>
-            <button class="btn btn-outline-danger btn-sm rounded-2"
-                    data-bs-toggle="modal" data-bs-target="#modalRemboursement">
-                <i class="fas fa-undo me-1"></i>Remboursement
-            </button>
         </div>
     </div>
 
-    <?php if (!$caisse): ?>
-    <!-- Alerte caisse fermée -->
-    <div class="card border-0 shadow-sm rounded-3 mb-3"
-         style="background:linear-gradient(135deg,#fff5f5,#fee2e2);border:1px solid #fecaca !important;">
-        <div class="card-body text-center py-4">
-            <i class="fas fa-lock fa-3x text-danger mb-3 d-block opacity-50"></i>
-            <h5 class="fw-bold text-danger">Caisse non ouverte</h5>
-            <p class="text-muted mb-3">Vous devez ouvrir la caisse avant de commencer à encaisser.</p>
-            <a href="<?= base_url('pos/caisse') ?>" class="btn btn-danger rounded-2 px-4">
-                <i class="fas fa-cash-register me-2"></i>Ouvrir la caisse maintenant
-            </a>
-        </div>
-    </div>
-    <?php endif; ?>
+    <div class="pos-layout">
 
-    <div class="pos-grid">
-
-        <!-- GAUCHE : commandes + produits -->
+        <!-- ════════════════ GAUCHE ════════════════ -->
         <div class="pos-left">
 
             <!-- Recherche -->
             <div class="card border-0 shadow-sm rounded-3 mb-3">
                 <div class="card-body py-3">
                     <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0">
+                        <span class="input-group-text bg-light">
                             <i class="fas fa-search text-muted"></i>
                         </span>
-                        <input type="text" id="rechercheInput"
-                               class="form-control bg-light border-start-0 shadow-none"
+                        <input type="text"
+                               id="searchInput"
+                               class="form-control bg-light shadow-none"
                                placeholder="Nom client, n° bon, téléphone ou scanner QR..."
                                autocomplete="off">
-                        <button class="btn btn-primary" id="btnScanQR"
-                                data-bs-toggle="modal" data-bs-target="#modalScanQR">
+                        <button class="btn btn-primary" onclick="lancerRecherche()">
                             <i class="fas fa-qrcode"></i>
                         </button>
                     </div>
-                    <div id="dropdownRecherche"
-                         class="list-group shadow-lg position-absolute d-none"
-                         style="z-index:1050;width:calc(100% - 48px);margin-top:2px;border-radius:10px;">
-                    </div>
+                    <div id="resultatsRecherche" class="mt-2"></div>
                 </div>
             </div>
 
             <!-- Commandes prêtes -->
             <div class="card border-0 shadow-sm rounded-3 mb-3">
                 <div class="card-body p-0">
-                    <div class="px-4 py-3 border-bottom d-flex justify-content-between">
-                        <p class="text-uppercase text-muted fw-semibold mb-0" style="font-size:11px;letter-spacing:.5px;">
-                            <i class="fas fa-check-circle text-success me-2"></i>Commandes prêtes
+                    <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <p class="text-uppercase fw-semibold mb-0"
+                           style="font-size:11px;letter-spacing:.5px;">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Commandes prêtes
                         </p>
-                        <span class="badge bg-success rounded-pill"><?= count($commandes) ?></span>
+                        <span class="badge bg-success rounded-pill">
+                            <?= count($commandesPrêtes) ?>
+                        </span>
                     </div>
                     <div class="p-3">
-                        <?php if (empty($commandes)): ?>
-                            <div class="text-center py-4 text-muted">
-                                <i class="fas fa-inbox fa-2x mb-2 d-block opacity-25"></i>
-                                Aucune commande prête à encaisser.
-                            </div>
+                        <?php if (empty($commandesPrêtes)): ?>
+                        <div class="text-center py-4 text-muted small">
+                            <i class="fas fa-inbox fa-2x mb-2 d-block opacity-25"></i>
+                            Aucune commande prête à encaisser.
+                        </div>
                         <?php else: ?>
-                        <div class="row g-2" id="listeCommandes">
-                            <?php foreach ($commandes as $cmd): ?>
+                        <div class="row g-2">
+                            <?php foreach ($commandesPrêtes as $cmd):
+                                $reste = max(0, $cmd['total_ttc'] - $cmd['total_encaisse']);
+                            ?>
                             <div class="col-md-6">
-                                <div class="cmd-card card border-0 shadow-sm p-3"
+                                <div class="commande-card"
                                      onclick="chargerCommande(<?= $cmd['id_depot'] ?>)">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="d-flex justify-content-between mb-1">
                                         <span class="fw-bold text-primary" style="font-size:13px;">
                                             <?= esc($cmd['code_commande']) ?>
                                         </span>
-                                        <?php if ($cmd['reste'] > 0): ?>
-                                            <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;">
-                                                <?= number_format($cmd['reste'],0,',',' ') ?> FCFA
-                                            </span>
+                                        <?php if ($reste > 0): ?>
+                                        <span style="background:#fee2e2;color:#991b1b;
+                                                     padding:2px 8px;border-radius:20px;
+                                                     font-size:11px;font-weight:600;">
+                                            <?= number_format($reste, 0, ',', ' ') ?> FCFA
+                                        </span>
                                         <?php else: ?>
-                                            <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-size:11px;">Soldé</span>
+                                        <span style="background:#dcfce7;color:#166534;
+                                                     padding:2px 8px;border-radius:20px;
+                                                     font-size:11px;font-weight:600;">
+                                            Soldé ✓
+                                        </span>
                                         <?php endif; ?>
                                     </div>
-                                    <div class="fw-semibold" style="font-size:13px;"><?= esc($cmd['nomclient']) ?></div>
+                                    <div class="fw-semibold" style="font-size:12px;">
+                                        <?= esc($cmd['nomclient']) ?>
+                                    </div>
                                     <div class="text-muted" style="font-size:11px;">
-                                        <i class="fas fa-phone me-1"></i><?= esc($cmd['telephone']) ?>
-                                        · <?= $cmd['nb_articles'] ?> article(s)
+                                        <?= esc($cmd['telephone']) ?> ·
+                                        <?= $cmd['nb_articles'] ?> article(s)
                                     </div>
                                 </div>
                             </div>
@@ -146,27 +156,36 @@
                 </div>
             </div>
 
-            <!-- Produits annexes -->
+            <!-- Produits boutique -->
             <?php if (!empty($produits)): ?>
             <div class="card border-0 shadow-sm rounded-3">
                 <div class="card-body p-0">
                     <div class="px-4 py-3 border-bottom">
-                        <p class="text-uppercase text-muted fw-semibold mb-0" style="font-size:11px;letter-spacing:.5px;">
-                            <i class="fas fa-box me-2"></i>Ventes annexes
+                        <p class="text-uppercase fw-semibold mb-0"
+                           style="font-size:11px;letter-spacing:.5px;">
+                            <i class="fas fa-shopping-bag text-primary me-2"></i>
+                            Produits boutique
                         </p>
                     </div>
                     <div class="p-3">
                         <div class="row g-2">
                             <?php foreach ($produits as $prod): ?>
-                            <div class="col-6 col-md-4 col-lg-3">
-                                <div class="prod-card card border shadow-sm p-2 text-center"
-                                     onclick="ajouterProduit(<?= $prod['id_produit'] ?>, '<?= esc($prod['nom']) ?>', <?= $prod['prix'] ?>)">
-                                    <i class="fas fa-box-open text-success mb-1"></i>
-                                    <div class="fw-semibold" style="font-size:12px;"><?= esc($prod['nom']) ?></div>
-                                    <div class="text-success fw-bold" style="font-size:12px;">
-                                        <?= number_format($prod['prix'],0,',',' ') ?> FCFA
+                            <div class="col-6 col-md-3">
+                                <div class="produit-card"
+                                     onclick="ajouterProduit(<?= $prod['id_produit'] ?>,
+                                              '<?= esc($prod['nom']) ?>',
+                                              <?= $prod['prix'] ?>,
+                                              <?= $prod['stock'] ?>)">
+                                    <i class="fas fa-box text-primary mb-1 d-block"></i>
+                                    <div class="fw-semibold" style="font-size:11px;">
+                                        <?= esc($prod['nom']) ?>
                                     </div>
-                                    <div class="text-muted" style="font-size:10px;">Stock: <?= $prod['stock'] ?></div>
+                                    <div class="text-success fw-bold" style="font-size:12px;">
+                                        <?= number_format($prod['prix'], 0, ',', ' ') ?> FCFA
+                                    </div>
+                                    <div class="text-muted" style="font-size:10px;">
+                                        Stock : <?= $prod['stock'] ?> <?= esc($prod['unite']) ?>
+                                    </div>
                                 </div>
                             </div>
                             <?php endforeach; ?>
@@ -178,435 +197,524 @@
 
         </div>
 
-        <!-- DROITE : ticket d'encaissement -->
+        <!-- ════════════════ DROITE : TICKET ════════════════ -->
         <div class="pos-right">
 
-            <!-- Commande sélectionnée -->
-            <div class="card border-0 shadow-sm rounded-3" id="zoneTicket">
-                <div class="card-body p-0">
-                    <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center"
-                         style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:12px 12px 0 0;">
-                        <p class="text-white fw-semibold mb-0" style="font-size:12px;letter-spacing:.5px;">
-                            <i class="fas fa-receipt me-2"></i>TICKET
-                        </p>
-                        <span id="ticketBon" class="text-white opacity-75" style="font-size:12px;">—</span>
-                    </div>
+            <!-- Header ticket -->
+            <div class="px-4 py-3 border-bottom border-secondary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-white fw-bold">
+                        <i class="fas fa-receipt me-2"></i>TICKET
+                    </span>
+                    <button onclick="viderTicket()"
+                            class="btn btn-sm"
+                            style="background:rgba(255,255,255,.1);color:#fff;border:none;">
+                        ✕
+                    </button>
+                </div>
+            </div>
 
-                    <!-- Infos client -->
-                    <div id="ticketClient" class="px-4 py-3 border-bottom d-none">
-                        <div class="fw-bold" id="ticketClientNom"></div>
-                        <div class="text-muted small" id="ticketClientTel"></div>
-                        <div class="text-warning small" id="ticketFidelite"></div>
+            <!-- Contenu ticket -->
+            <div id="ticketContenu" class="flex-fill overflow-auto px-4 py-3">
+                <div class="text-center text-secondary py-5" id="ticketVide">
+                    <i class="fas fa-hand-point-left fa-2x mb-2 d-block opacity-50"></i>
+                    <span style="font-size:13px;">Sélectionnez une commande</span>
+                </div>
+                <div id="ticketData" class="d-none">
+                    <!-- Infos commande -->
+                    <div class="mb-3">
+                        <div class="text-muted" style="font-size:10px;text-transform:uppercase;">Client</div>
+                        <div class="text-white fw-bold" id="t_client">—</div>
+                        <div class="text-secondary" style="font-size:11px;" id="t_tel">—</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="text-muted" style="font-size:10px;text-transform:uppercase;">Commande</div>
+                        <div class="text-primary fw-bold" id="t_bon">—</div>
                     </div>
 
                     <!-- Articles -->
-                    <div id="ticketArticles" class="px-3 py-2" style="max-height:220px;overflow-y:auto;">
-                        <div class="text-center text-muted py-4" id="ticketVide">
-                            <i class="fas fa-hand-pointer fa-2x mb-2 d-block opacity-25"></i>
-                            Sélectionnez une commande
-                        </div>
-                        <div id="listeArticlesTicket"></div>
-                    </div>
+                    <div id="t_articles" class="mb-3"></div>
 
                     <!-- Totaux -->
-                    <div id="ticketTotaux" class="px-4 py-3 border-top d-none"
-                         style="background:#f8fafc;">
-                        <div class="d-flex justify-content-between mb-1" style="font-size:13px;">
-                            <span class="text-muted">Total facture</span>
-                            <span class="fw-semibold" id="ticketTotal">0 FCFA</span>
+                    <div class="border-top border-secondary pt-2 mb-3">
+                        <div class="d-flex justify-content-between text-white mb-1">
+                            <span style="font-size:12px;">Total facture</span>
+                            <span class="fw-bold" id="t_total">—</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-1" style="font-size:13px;">
-                            <span class="text-muted">Déjà payé</span>
-                            <span class="text-success" id="ticketDejaPaye">0 FCFA</span>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-secondary" style="font-size:12px;">Déjà encaissé</span>
+                            <span class="text-success" id="t_encaisse">—</span>
                         </div>
-                        <div class="d-flex justify-content-between border-top pt-2 mt-1">
-                            <span class="fw-bold">Reste à payer</span>
-                            <span class="fw-bold text-danger fs-5" id="ticketReste">0 FCFA</span>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-white fw-bold">Reste à payer</span>
+                            <span class="text-danger fw-bold fs-5" id="t_reste">—</span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Produits boutique ajoutés -->
+                <div id="produitsTicket" class="d-none mb-3">
+                    <div class="text-muted" style="font-size:10px;text-transform:uppercase;
+                                                   margin-bottom:6px;">Produits boutique</div>
+                    <div id="listeProduits"></div>
                 </div>
             </div>
 
-            <!-- Paiement -->
-            <div class="card border-0 shadow-sm rounded-3" id="zonePaiement">
-                <div class="card-body">
-                    <p class="text-uppercase text-muted fw-semibold mb-3" style="font-size:11px;letter-spacing:.5px;">
-                        <i class="fas fa-coins me-2"></i>Mode de paiement
-                    </p>
-
-                    <!-- Boutons modes -->
-                    <div class="d-flex gap-2 flex-wrap mb-3">
-                        <button class="btn btn-sm mode-btn active rounded-2 flex-fill" data-mode="especes">
-                            <i class="fas fa-money-bill me-1"></i>Espèces
-                        </button>
-                        <button class="btn btn-sm mode-btn rounded-2 flex-fill" data-mode="mobile_money">
-                            <i class="fas fa-mobile me-1"></i>Mobile
-                        </button>
-                        <button class="btn btn-sm mode-btn rounded-2 flex-fill" data-mode="carte">
-                            <i class="fas fa-credit-card me-1"></i>Carte
-                        </button>
-                        <button class="btn btn-sm mode-btn rounded-2 flex-fill" data-mode="mixte">
-                            <i class="fas fa-layer-group me-1"></i>Mixte
-                        </button>
+            <!-- Mode paiement -->
+            <div class="px-4 py-3 border-top border-secondary">
+                <div class="text-muted mb-2" style="font-size:10px;text-transform:uppercase;
+                                                     letter-spacing:.5px;">Mode de paiement</div>
+                <div class="d-flex gap-2 mb-3">
+                    <?php
+                    $modes = [
+                        'especes'      => ['label' => 'Espèces',   'icon' => 'fa-money-bill-wave'],
+                        'mobile_money' => ['label' => 'Mobile',    'icon' => 'fa-mobile-alt'],
+                        'carte'        => ['label' => 'Carte',     'icon' => 'fa-credit-card'],
+                        'mixte'        => ['label' => 'Mixte',     'icon' => 'fa-layer-group'],
+                    ];
+                    foreach ($modes as $val => $m):
+                    ?>
+                    <div class="flex-fill mode-btn rounded-2 text-center py-2 px-1
+                                <?= $val === 'especes' ? 'active' : '' ?>"
+                         style="background:rgba(255,255,255,.08);color:#94a3b8;font-size:11px;"
+                         data-mode="<?= $val ?>"
+                         onclick="selectionnerMode('<?= $val ?>')">
+                        <i class="fas <?= $m['icon'] ?> d-block mb-1" style="font-size:14px;"></i>
+                        <?= $m['label'] ?>
                     </div>
-
-                    <!-- Champs montants -->
-                    <div id="champsSimples">
-                        <label class="form-label fw-semibold small">Montant encaissé (FCFA)</label>
-                        <input type="number" id="montantEncaisse" class="form-control form-control-lg fw-bold"
-                               placeholder="0" min="0">
-                        <div id="zoneRendu" class="mt-2 d-none rounded-2 p-2 text-center"
-                             style="background:#f0fdf4;border:1px solid #bbf7d0;">
-                            <span class="text-muted small">Rendu monnaie : </span>
-                            <span class="fw-bold text-success fs-5" id="affRendu">0 FCFA</span>
-                        </div>
-                    </div>
-
-                    <div id="champsMixte" class="d-none">
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label fw-semibold" style="font-size:11px;">Espèces</label>
-                                <input type="number" id="mixEspeces" class="form-control" placeholder="0" min="0" oninput="calculerMixte()">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fw-semibold" style="font-size:11px;">Mobile</label>
-                                <input type="number" id="mixMobile" class="form-control" placeholder="0" min="0" oninput="calculerMixte()">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fw-semibold" style="font-size:11px;">Carte</label>
-                                <input type="number" id="mixCarte" class="form-control" placeholder="0" min="0" oninput="calculerMixte()">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fw-semibold" style="font-size:11px;">Fidélité (pts)</label>
-                                <input type="number" id="mixFidelite" class="form-control" placeholder="0" min="0" oninput="calculerMixte()">
-                            </div>
-                        </div>
-                        <div class="mt-2 rounded-2 p-2" style="background:#fefce8;border:1px solid #fde68a;">
-                            <div class="d-flex justify-content-between" style="font-size:12px;">
-                                <span class="text-muted">Total saisi</span>
-                                <span class="fw-bold" id="mixTotal">0 FCFA</span>
-                            </div>
-                            <div class="d-flex justify-content-between" style="font-size:12px;">
-                                <span class="text-muted">Reste</span>
-                                <span class="fw-bold text-danger" id="mixReste">0 FCFA</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bouton encaisser -->
-                    <button id="btnEncaisser"
-                            class="btn btn-success w-100 rounded-2 fw-bold mt-3"
-                            style="height:52px;font-size:16px;"
-                            onclick="validerEncaissement()"
-                            disabled>
-                        <i class="fas fa-check me-2"></i>Encaisser
-                    </button>
-
+                    <?php endforeach; ?>
                 </div>
+
+                <!-- Montant mixte -->
+                <div id="zoneMixte" class="d-none mb-3">
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <label class="text-muted" style="font-size:10px;">Espèces</label>
+                            <input type="number" id="mix_especes" class="form-control form-control-sm"
+                                   placeholder="0" min="0" oninput="calculerMixte()">
+                        </div>
+                        <div class="col-4">
+                            <label class="text-muted" style="font-size:10px;">Mobile</label>
+                            <input type="number" id="mix_mobile" class="form-control form-control-sm"
+                                   placeholder="0" min="0" oninput="calculerMixte()">
+                        </div>
+                        <div class="col-4">
+                            <label class="text-muted" style="font-size:10px;">Carte</label>
+                            <input type="number" id="mix_carte" class="form-control form-control-sm"
+                                   placeholder="0" min="0" oninput="calculerMixte()">
+                        </div>
+                    </div>
+                    <div id="mixteErreur" class="text-warning mt-1 d-none"
+                         style="font-size:11px;"></div>
+                </div>
+
+                <!-- Rendu monnaie -->
+                <div id="zoneRendu" class="d-none mb-2 rounded-2 p-2 text-center"
+                     style="background:rgba(16,185,129,.15);">
+                    <div class="text-muted" style="font-size:10px;">Rendu monnaie</div>
+                    <div class="text-success fw-bold fs-5" id="montantRendu">0 FCFA</div>
+                </div>
+
+                <!-- Bouton encaisser -->
+                <button id="btnEncaisser"
+                        class="btn btn-success w-100 btn-lg rounded-2 fw-bold"
+                        onclick="procederEncaissement()"
+                        disabled>
+                    <i class="fas fa-check me-2"></i>Encaisser
+                </button>
             </div>
 
         </div>
     </div>
 </div>
 
-<!-- MODAL SCAN QR -->
-<div class="modal fade" id="modalScanQR" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header border-0 px-4 pt-4 pb-0">
-                <h5 class="fw-bold mb-0"><i class="fas fa-qrcode text-primary me-2"></i>Scanner le bon</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body px-4 pb-4">
-                <div id="readerPOS" style="width:100%;border-radius:10px;overflow:hidden;"></div>
-                <p class="text-muted small text-center mt-2">Pointez vers le QR code du bon de dépôt.</p>
-            </div>
-        </div>
+<!-- Toast feedback -->
+<div id="toastPos"
+     class="position-fixed bottom-0 end-0 m-3 toast align-items-center border-0"
+     style="z-index:9999;min-width:280px;"
+     role="alert">
+    <div class="d-flex">
+        <div class="toast-body fw-semibold" id="toastMsg"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                data-bs-dismiss="toast"></button>
     </div>
 </div>
 
-<!-- MODAL REMBOURSEMENT -->
-<div class="modal fade" id="modalRemboursement" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:460px;">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header border-0 px-4 pt-4 pb-0">
-                <h5 class="fw-bold mb-0"><i class="fas fa-undo text-danger me-2"></i>Remboursement / Avoir</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="<?= base_url('pos/rembourser') ?>" method="POST">
-                <?= csrf_field() ?>
-                <div class="modal-body px-4 py-3">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">N° de bon concerné</label>
-                        <input type="text" name="code_bon" class="form-control"
-                               placeholder="BON-XXXXXXXXXX" required>
-                    </div>
-                    <input type="hidden" name="depot_id" id="remb_depot_id">
-                    <input type="hidden" name="client_id" id="remb_client_id">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Montant à rembourser (FCFA)</label>
-                        <input type="number" name="montant_remboursement" class="form-control"
-                               placeholder="0" min="1" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Type de remboursement</label>
-                        <div class="d-flex gap-2">
-                            <div class="flex-fill">
-                                <input type="radio" class="btn-check" name="type_remboursement"
-                                       id="rembEspeces" value="especes" checked>
-                                <label class="btn btn-outline-secondary w-100" for="rembEspeces">
-                                    <i class="fas fa-money-bill me-1"></i>Espèces
-                                </label>
-                            </div>
-                            <div class="flex-fill">
-                                <input type="radio" class="btn-check" name="type_remboursement"
-                                       id="rembAvoir" value="avoir">
-                                <label class="btn btn-outline-secondary w-100" for="rembAvoir">
-                                    <i class="fas fa-gift me-1"></i>Avoir client
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Motif obligatoire <span class="text-danger">*</span></label>
-                        <textarea name="motif" class="form-control" rows="2"
-                                  placeholder="Article endommagé, erreur de prestation..." required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 px-4 pb-4 pt-0">
-                    <button type="button" class="btn btn-light rounded-2" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-danger px-4 rounded-2">
-                        <i class="fas fa-undo me-2"></i>Valider le remboursement
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script>
-const BASE = '<?= base_url() ?>';
-let depotActif   = null;
-let modeActif    = 'especes';
-let scannerPOS   = null;
-let produitsAnnexes = [];
+const BASE        = '<?= base_url() ?>';
+const CSRF_TOKEN  = '<?= csrf_token() ?>';
+const CSRF_HASH   = '<?= csrf_hash() ?>';
 
-// ── Styles boutons mode ──────────────────────────────
-document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', function () {
-        document.querySelectorAll('.mode-btn').forEach(b => {
-            b.classList.remove('active','btn-primary');
-            b.classList.add('btn-outline-secondary');
-        });
-        this.classList.add('active','btn-primary');
-        this.classList.remove('btn-outline-secondary');
-        modeActif = this.dataset.mode;
+let depotActif    = null; // données de la commande sélectionnée
+let modeActif     = 'especes';
+let produitsPanier = []; // produits boutique ajoutés
 
-        document.getElementById('champsSimples').classList.toggle('d-none', modeActif === 'mixte');
-        document.getElementById('champsMixte').classList.toggle('d-none',   modeActif !== 'mixte');
-    });
-});
-// Init style boutons
-document.querySelectorAll('.mode-btn').forEach(b => {
-    if (b.dataset.mode !== 'especes') {
-        b.classList.add('btn-outline-secondary');
-        b.classList.remove('btn-primary');
-    } else {
-        b.classList.add('btn-primary');
-    }
-});
-
-// ── Recherche live ───────────────────────────────────
-let rechTimer = null;
-document.getElementById('rechercheInput').addEventListener('input', function () {
-    clearTimeout(rechTimer);
+// ─────────────────────────────────────────────────────────────
+// RECHERCHE
+// ─────────────────────────────────────────────────────────────
+let rechercheTimer = null;
+document.getElementById('searchInput').addEventListener('input', function () {
+    clearTimeout(rechercheTimer);
     const q = this.value.trim();
-    if (q.length < 2) { document.getElementById('dropdownRecherche').classList.add('d-none'); return; }
-    rechTimer = setTimeout(() => {
-        fetch(`${BASE}pos/api/recherche?q=${encodeURIComponent(q)}`)
-            .then(r => r.json())
-            .then(data => {
-                const dd = document.getElementById('dropdownRecherche');
-                dd.innerHTML = '';
-                if (!data.length) { dd.classList.add('d-none'); return; }
-                data.forEach(d => {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'list-group-item list-group-item-action d-flex justify-content-between';
-                    btn.innerHTML = `<div><strong>${d.code_commande}</strong> — ${d.nomclient}</div>
-                                     <span class="text-danger fw-bold">${Number(d.total_ttc - d.acompte_verse).toLocaleString('fr-FR')} FCFA</span>`;
-                    btn.onclick = () => { chargerCommande(d.id_depot); dd.classList.add('d-none'); };
-                    dd.appendChild(btn);
-                });
-                dd.classList.remove('d-none');
-            });
-    }, 300);
+    if (q.length < 2) {
+        document.getElementById('resultatsRecherche').innerHTML = '';
+        return;
+    }
+    rechercheTimer = setTimeout(() => rechercherCommande(q), 300);
 });
 
-// ── Charger commande ─────────────────────────────────
-function chargerCommande(id) {
-    document.querySelectorAll('.cmd-card').forEach(c => c.classList.remove('active'));
-    const card = document.querySelector(`[onclick="chargerCommande(${id})"]`);
-    if (card) card.classList.add('active');
+document.getElementById('searchInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') rechercherCommande(this.value.trim());
+});
 
-    fetch(`${BASE}pos/commande/${id}`)
+function lancerRecherche() {
+    rechercherCommande(document.getElementById('searchInput').value.trim());
+}
+
+function rechercherCommande(q) {
+    if (!q) return;
+    fetch(`${BASE}/pos/api/recherche?q=${encodeURIComponent(q)}`)
         .then(r => r.json())
         .then(data => {
-            if (!data.success) { alert(data.message); return; }
-            depotActif = data.depot;
-            afficherTicket(depotActif);
+            const zone = document.getElementById('resultatsRecherche');
+            if (!data.length) {
+                zone.innerHTML = '<div class="text-muted small py-2">Aucun résultat.</div>';
+                return;
+            }
+            const statutColors = {
+                'pret'     : '#dcfce7',
+                'depot'    : '#f1f5f9',
+                'en_cours' : '#fef3c7',
+                'livre'    : '#f1f5f9',
+            };
+            const statutLabels = {
+                'pret'     : '✅ Prêt',
+                'depot'    : '📦 Reçu',
+                'en_cours' : '⚙️ En cours',
+                'livre'    : '✓ Livré',
+            };
+            zone.innerHTML = data.map(d => {
+                const reste = Math.max(0, d.total_ttc - d.total_encaisse);
+                const bg    = statutColors[d.statut_global] || '#f1f5f9';
+                return `
+                <div class="commande-card mb-1 d-flex justify-content-between align-items-center"
+                     style="background:${bg};"
+                     onclick="chargerCommande(${d.id_depot})">
+                    <div>
+                        <span class="fw-bold text-primary" style="font-size:12px;">
+                            ${d.code_commande}
+                        </span>
+                        <span class="text-muted ms-2" style="font-size:11px;">
+                            ${statutLabels[d.statut_global] || d.statut_global}
+                        </span>
+                        <div style="font-size:12px;">${d.nomclient} · ${d.telephone}</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold" style="font-size:12px;">
+                            ${reste > 0
+                                ? `<span class="text-danger">${reste.toLocaleString('fr-FR')} FCFA</span>`
+                                : '<span class="text-success">Soldé ✓</span>'}
+                        </div>
+                        <div class="text-muted" style="font-size:10px;">
+                            ${d.nb_articles} art.
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
         });
 }
 
-function afficherTicket(depot) {
-    document.getElementById('ticketVide').classList.add('d-none');
-    document.getElementById('ticketBon').textContent  = depot.code_commande;
-    document.getElementById('ticketClient').classList.remove('d-none');
-    document.getElementById('ticketClientNom').textContent = depot.nomclient;
-    document.getElementById('ticketClientTel').textContent = '📞 ' + depot.telephone;
-    document.getElementById('ticketFidelite').textContent  = '⭐ ' + depot.solde_fidelite + ' pts fidélité';
-    document.getElementById('ticketTotaux').classList.remove('d-none');
-    document.getElementById('ticketTotal').textContent    = Number(depot.total_ttc).toLocaleString('fr-FR') + ' FCFA';
-    document.getElementById('ticketDejaPaye').textContent = Number(depot.deja_paye).toLocaleString('fr-FR') + ' FCFA';
-    document.getElementById('ticketReste').textContent    = Number(depot.reste_a_payer).toLocaleString('fr-FR') + ' FCFA';
+// ─────────────────────────────────────────────────────────────
+// CHARGER UNE COMMANDE DANS LE TICKET
+// ─────────────────────────────────────────────────────────────
+function chargerCommande(idDepot) {
+    fetch(`${BASE}/pos/api/commande/${idDepot}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) { afficherToast('danger', 'Commande introuvable.'); return; }
 
-    const liste = document.getElementById('listeArticlesTicket');
-    liste.innerHTML = depot.articles.map(a => `
-        <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="font-size:12px;">
-            <div>
-                <div class="fw-semibold">${a.nom_libelle}</div>
-                <div class="text-muted">${a.type_prestation || '—'} ${a.options_express == 1 ? '🚀' : ''}</div>
+            depotActif = data.depot;
+            produitsPanier = [];
+
+            document.getElementById('ticketVide').classList.add('d-none');
+            document.getElementById('ticketData').classList.remove('d-none');
+            document.getElementById('produitsTicket').classList.add('d-none');
+
+            document.getElementById('t_client').textContent   = data.depot.nomclient;
+            document.getElementById('t_tel').textContent      = data.depot.telephone;
+            document.getElementById('t_bon').textContent      = data.depot.code_commande;
+            document.getElementById('t_total').textContent    =
+                data.depot.total_ttc.toLocaleString('fr-FR') + ' FCFA';
+            document.getElementById('t_encaisse').textContent =
+                data.depot.total_encaisse.toLocaleString('fr-FR') + ' FCFA';
+            document.getElementById('t_reste').textContent    =
+                data.depot.reste.toLocaleString('fr-FR') + ' FCFA';
+
+            // Articles
+            document.getElementById('t_articles').innerHTML = data.depot.articles.map(a => `
+                <div class="d-flex justify-content-between mb-1"
+                     style="font-size:11px;color:#94a3b8;">
+                    <span>${a.nom_libelle} ${a.options_express
+                        ? '<span style="color:#f87171;">⚡</span>' : ''}</span>
+                    <span>${(a.prix_applique||0).toLocaleString('fr-FR')} F</span>
+                </div>`).join('');
+
+            mettreAJourBoutonEncaisser();
+
+            // Marquer active
+            document.querySelectorAll('.commande-card').forEach(c =>
+                c.classList.remove('active'));
+        });
+}
+
+// ─────────────────────────────────────────────────────────────
+// PRODUITS BOUTIQUE
+// ─────────────────────────────────────────────────────────────
+function ajouterProduit(id, nom, prix, stock) {
+    const existe = produitsPanier.find(p => p.id === id);
+    if (existe) {
+        if (existe.qte >= stock) {
+            afficherToast('warning', 'Stock insuffisant.');
+            return;
+        }
+        existe.qte++;
+    } else {
+        produitsPanier.push({ id, nom, prix, stock, qte: 1 });
+    }
+    afficherProduitsTicket();
+    mettreAJourBoutonEncaisser();
+}
+
+function afficherProduitsTicket() {
+    if (produitsPanier.length === 0) {
+        document.getElementById('produitsTicket').classList.add('d-none');
+        return;
+    }
+    document.getElementById('produitsTicket').classList.remove('d-none');
+    document.getElementById('listeProduits').innerHTML = produitsPanier.map((p, i) => `
+        <div class="d-flex justify-content-between align-items-center mb-1"
+             style="font-size:11px;color:#94a3b8;">
+            <span>${p.nom} × ${p.qte}</span>
+            <div class="d-flex align-items-center gap-2">
+                <span>${(p.prix * p.qte).toLocaleString('fr-FR')} F</span>
+                <button onclick="retirerProduit(${i})"
+                        style="background:rgba(255,255,255,.1);border:none;
+                               color:#f87171;border-radius:4px;padding:0 5px;cursor:pointer;">
+                    ×
+                </button>
             </div>
-            <span class="fw-bold text-success">${Number(a.prix_applique).toLocaleString('fr-FR')} FCFA</span>
-        </div>
-    `).join('');
+        </div>`).join('');
+}
 
-    // Pré-remplir montant
-    document.getElementById('montantEncaisse').value = depot.reste_a_payer;
-    document.getElementById('btnEncaisser').disabled = false;
+function retirerProduit(index) {
+    produitsPanier.splice(index, 1);
+    afficherProduitsTicket();
+    mettreAJourBoutonEncaisser();
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODE PAIEMENT
+// ─────────────────────────────────────────────────────────────
+function selectionnerMode(mode) {
+    modeActif = mode;
+    document.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === mode);
+    });
+    document.getElementById('zoneMixte').classList.toggle('d-none', mode !== 'mixte');
+    document.getElementById('zoneRendu').classList.add('d-none');
     calculerRendu();
 }
 
-// ── Calculs ──────────────────────────────────────────
-document.getElementById('montantEncaisse').addEventListener('input', calculerRendu);
-
 function calculerRendu() {
-    if (!depotActif) return;
-    const encaisse = parseFloat(document.getElementById('montantEncaisse').value) || 0;
-    const reste    = depotActif.reste_a_payer;
-    const rendu    = encaisse - reste;
-    const zoneRendu = document.getElementById('zoneRendu');
-    if (modeActif === 'especes' && encaisse > 0) {
-        zoneRendu.classList.remove('d-none');
-        document.getElementById('affRendu').textContent = Math.max(0, rendu).toLocaleString('fr-FR') + ' FCFA';
-    } else {
-        zoneRendu.classList.add('d-none');
+    if (!depotActif || modeActif !== 'especes') {
+        document.getElementById('zoneRendu').classList.add('d-none');
+        return;
     }
+    // Pour l'instant on affiche le rendu si espèces
+    // Le rendu sera calculé côté serveur
 }
 
 function calculerMixte() {
-    if (!depotActif) return;
-    const esp = parseFloat(document.getElementById('mixEspeces').value)  || 0;
-    const mob = parseFloat(document.getElementById('mixMobile').value)   || 0;
-    const car = parseFloat(document.getElementById('mixCarte').value)    || 0;
-    const fid = parseFloat(document.getElementById('mixFidelite').value) || 0;
-    const total = esp + mob + car + fid;
-    const reste = Math.max(0, depotActif.reste_a_payer - total);
-    document.getElementById('mixTotal').textContent = total.toLocaleString('fr-FR') + ' FCFA';
-    document.getElementById('mixReste').textContent = reste.toLocaleString('fr-FR') + ' FCFA';
+    const esp = parseFloat(document.getElementById('mix_especes').value) || 0;
+    const mob = parseFloat(document.getElementById('mix_mobile').value)  || 0;
+    const car = parseFloat(document.getElementById('mix_carte').value)   || 0;
+    const total = esp + mob + car;
+    const reste = depotActif ? depotActif.reste : 0;
+
+    const errEl = document.getElementById('mixteErreur');
+    if (total !== reste && reste > 0) {
+        errEl.textContent = `Total mixte : ${total.toLocaleString('fr-FR')} FCFA (reste : ${reste.toLocaleString('fr-FR')} FCFA)`;
+        errEl.classList.remove('d-none');
+    } else {
+        errEl.classList.add('d-none');
+    }
 }
 
-// ── Produits annexes ─────────────────────────────────
-function ajouterProduit(id, nom, prix) {
-    const existant = produitsAnnexes.findIndex(p => p.id === id);
-    if (existant >= 0) {
-        produitsAnnexes[existant].qte++;
-    } else {
-        produitsAnnexes.push({ id, nom, prix, qte: 1 });
-    }
-    // TODO: afficher dans le ticket et encaisser séparément si pas de dépôt actif
-    alert(`${nom} ajouté (${prix.toLocaleString('fr-FR')} FCFA)`);
+// ─────────────────────────────────────────────────────────────
+// ENCAISSEMENT
+// ─────────────────────────────────────────────────────────────
+function mettreAJourBoutonEncaisser() {
+    const btn = document.getElementById('btnEncaisser');
+    const aCommande  = depotActif && depotActif.reste > 0;
+    const aProduits  = produitsPanier.length > 0;
+    btn.disabled = !(aCommande || aProduits);
 }
 
-// ── Valider encaissement ─────────────────────────────
-function validerEncaissement() {
-    if (!depotActif) { alert('Sélectionnez une commande.'); return; }
-
-    let payload = {
-        depot_id:    depotActif.id_depot,
-        client_id:   depotActif.client_id,
-        '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
-    };
-
-    if (modeActif === 'mixte') {
-        const esp = parseFloat(document.getElementById('mixEspeces').value)  || 0;
-        const mob = parseFloat(document.getElementById('mixMobile').value)   || 0;
-        const car = parseFloat(document.getElementById('mixCarte').value)    || 0;
-        const fid = parseFloat(document.getElementById('mixFidelite').value) || 0;
-        payload.montant_total   = esp + mob + car + fid;
-        payload.mode_paiement   = 'mixte';
-        payload.montant_especes = esp;
-        payload.montant_mobile  = mob;
-        payload.montant_carte   = car;
-        payload.montant_fidelite = fid;
-    } else {
-        const montant = parseFloat(document.getElementById('montantEncaisse').value) || 0;
-        payload.montant_total   = montant;
-        payload.mode_paiement   = modeActif;
-        payload.montant_especes = modeActif === 'especes'      ? montant : 0;
-        payload.montant_mobile  = modeActif === 'mobile_money' ? montant : 0;
-        payload.montant_carte   = modeActif === 'carte'        ? montant : 0;
-        payload.rendu_monnaie   = Math.max(0, montant - depotActif.reste_a_payer);
-    }
-
+async function procederEncaissement() {
     const btn = document.getElementById('btnEncaisser');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Traitement...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>En cours...';
 
-    fetch(`${BASE}pos/encaisser`, {
+    try {
+        // 1. Encaisser la commande si présente
+        if (depotActif && depotActif.reste > 0) {
+            let body = new URLSearchParams({
+                depot_id       : depotActif.id_depot,
+                montant        : depotActif.reste,
+                mode_paiement  : modeActif,
+                [CSRF_TOKEN]   : CSRF_HASH,
+            });
+
+            if (modeActif === 'mixte') {
+                body.append('montant_especes', document.getElementById('mix_especes').value || 0);
+                body.append('montant_mobile',  document.getElementById('mix_mobile').value  || 0);
+                body.append('montant_carte',   document.getElementById('mix_carte').value   || 0);
+            }
+
+            const res  = await fetch(`${BASE}/pos/encaisser`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                afficherToast('danger', data.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check me-2"></i>Encaisser';
+                return;
+            }
+
+            if (data.success && data.id_transaction) {
+                imprimerRecu(data.id_transaction);
+            }
+
+            if (data.rendu > 0) {
+                document.getElementById('zoneRendu').classList.remove('d-none');
+                document.getElementById('montantRendu').textContent =
+                    data.rendu.toLocaleString('fr-FR') + ' FCFA';
+            }
+
+            afficherToast('success', data.message);
+
+            if (data.solde) {
+                setTimeout(() => {
+                    viderTicket();
+                    location.reload();
+                }, 2000);
+                return;
+            }
+        }
+
+        // 2. Vendre produits boutique
+        for (const prod of produitsPanier) {
+            await fetch(`${BASE}/pos/vendre-produit`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new URLSearchParams({
+                    produit_id    : prod.id,
+                    quantite      : prod.qte,
+                    mode_paiement : modeActif,
+                    [CSRF_TOKEN]  : CSRF_HASH,
+                })
+            });
+        }
+
+        if (produitsPanier.length > 0) {
+            afficherToast('success', '✅ Produits vendus !');
+            produitsPanier = [];
+            afficherProduitsTicket();
+        }
+
+    } catch (err) {
+        afficherToast('danger', 'Erreur réseau.');
+        console.error(err);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check me-2"></i>Encaisser';
+    mettreAJourBoutonEncaisser();
+}
+
+// ─────────────────────────────────────────────────────────────
+// VIDER TICKET
+// ─────────────────────────────────────────────────────────────
+function viderTicket() {
+    depotActif     = null;
+    produitsPanier = [];
+    document.getElementById('ticketVide').classList.remove('d-none');
+    document.getElementById('ticketData').classList.add('d-none');
+    document.getElementById('produitsTicket').classList.add('d-none');
+    document.getElementById('zoneRendu').classList.add('d-none');
+    document.getElementById('btnEncaisser').disabled = true;
+    document.getElementById('searchInput').value = '';
+    document.getElementById('resultatsRecherche').innerHTML = '';
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────────────
+function afficherToast(type, msg) {
+    const el  = document.getElementById('toastPos');
+    const txt = document.getElementById('toastMsg');
+    el.className = `position-fixed bottom-0 end-0 m-3 toast align-items-center border-0 bg-${type}`;
+    txt.textContent = msg;
+    txt.className   = `toast-body fw-semibold ${type === 'success' ? 'text-white' : 'text-white'}`;
+    new bootstrap.Toast(el, { delay: 3000 }).show();
+}
+
+// ─────────────────────────────────────────────────────────────
+// REMBOURSEMENT
+// ─────────────────────────────────────────────────────────────
+function ouvrirRemboursement() {
+    if (!depotActif) {
+        afficherToast('warning', 'Sélectionnez d\'abord une commande.');
+        return;
+    }
+    const montant = prompt(
+        `Remboursement pour ${depotActif.nomclient}\n` +
+        `Montant à rembourser (FCFA) :`,
+        ''
+    );
+    if (!montant || isNaN(montant) || parseFloat(montant) <= 0) return;
+
+    const motif = prompt('Motif du remboursement :', 'Remboursement client');
+    if (motif === null) return;
+
+    fetch(`${BASE}/pos/rembourser`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(payload),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: new URLSearchParams({
+            depot_id      : depotActif.id_depot,
+            montant       : montant,
+            motif         : motif,
+            mode_paiement : modeActif,
+            [CSRF_TOKEN]  : CSRF_HASH,
+        })
     })
     .then(r => r.json())
     .then(data => {
-        if (data.success) {
-            // Proposer reçu ou facture
-            const choix = confirm('Encaissement réussi !\n\nOK = Imprimer le reçu\nAnnuler = Continuer sans imprimer');
-            if (choix) window.open(`${BASE}pos/recu/${data.id_transaction}`, '_blank');
-            location.reload();
-        } else {
-            alert('Erreur : ' + data.message);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-check me-2"></i>Encaisser';
-        }
+        afficherToast(data.success ? 'success' : 'danger', data.message);
+        if (data.success) chargerCommande(depotActif.id_depot);
     });
 }
 
-// ── Scan QR ──────────────────────────────────────────
-document.getElementById('modalScanQR').addEventListener('shown.bs.modal', () => {
-    scannerPOS = new Html5Qrcode('readerPOS');
-    scannerPOS.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 120 } },
-        (code) => {
-            scannerPOS.stop();
-            bootstrap.Modal.getInstance(document.getElementById('modalScanQR')).hide();
-            // Le QR code contient l'id_depot ou le code_commande
-            const id = parseInt(code);
-            if (!isNaN(id)) chargerCommande(id);
-            else document.getElementById('rechercheInput').value = code;
-        },
-        () => {}
-    ).catch(() => {
-        document.getElementById('readerPOS').innerHTML =
-            '<div class="alert alert-warning">Caméra indisponible.</div>';
-    });
-});
-document.getElementById('modalScanQR').addEventListener('hidden.bs.modal', () => {
-    if (scannerPOS) { scannerPOS.stop().catch(() => {}); scannerPOS = null; }
-});
+// ─────────────────────────────────────────────────────────────
+// IMPRIMER REÇU après encaissement
+// ─────────────────────────────────────────────────────────────
+function imprimerRecu(idTransaction) {
+    window.open(`${BASE}/pos/recu/${idTransaction}?auto=1`, '_blank');
+}
 </script>
 
 <?= $this->endSection() ?>

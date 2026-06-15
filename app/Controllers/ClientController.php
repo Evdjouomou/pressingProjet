@@ -9,14 +9,32 @@ class ClientController extends BaseController
 {
     public function index()
     {
-        $clientModel = new ClientModel();
+        $db           = \Config\Database::connect();
         $grillesModel = new GrilleProModel();
-        $data = [
-            'title' => 'Gestion des Clients',
-            'clients' => $clientModel->orderBy('dateajout', 'DESC')->findAll(),
-            'grilles' => $grillesModel->findAll()
-        ];
-        return view('pages/client', $data);
+
+        $builder = $db->table('clients c')
+            ->select('c.*, s.nom_shop')
+            ->join('shops s', 's.id_shop = c.shop_id', 'left')
+            ->orderBy('c.dateajout', 'DESC');
+
+        $shopId = shop_actif_id();
+        if ($shopId !== null) {
+            $builder->groupStart()
+                ->where('c.shop_id', $shopId)
+                ->orWhere('c.shop_id IS NULL') // Sécurité : affiche aussi les clients globaux ou sans shop assigné
+                ->orWhere('c.id_client IN (
+                    SELECT DISTINCT client_id FROM depots WHERE shop_id = ' . (int)$shopId . '
+                )')
+            ->groupEnd();
+        }
+
+        $clients = $builder->get()->getResultArray();
+
+        return view('pages/client', [
+            'title'   => 'Gestion des Clients',
+            'clients' => $clients,
+            'grilles' => $grillesModel->findAll(),
+        ]);
     }
 
     public function saveclient()
@@ -55,7 +73,7 @@ class ClientController extends BaseController
 
                 $data = [
                     'nomclient'      => $this->request->getPost('nomclient'),
-                    'email'          => $this->request->getPost('email'),
+                    'email'          => $this->request->getPost('email') ?: null,
                     'telephone'      => $this->request->getPost('telephone'),
                     'adresse'        => $this->request->getPost('adresse'),
                     'journaissance'  => $fullBirthday,
@@ -63,6 +81,9 @@ class ClientController extends BaseController
                     'grille_id'      => $this->request->getPost('grille_id') ?: null,
                     'preferences'    => $this->request->getPost('preferences'),
                     'dateajout'      => date('Y-m-d H:i:s'),
+                    'enregistre_par' => employe_connecte_id(),
+                    // CORRECTION CRITIQUE : On lie le client au shop actif lors de sa création
+                    'shop_id'        => shop_actif_id() 
                 ];
 
                 if ($clientModel->save($data)) {
@@ -77,59 +98,68 @@ class ClientController extends BaseController
         return redirect()->back();    
     }
 
-    public function ficheclient($id_client)
+    public function ficheclient(int $id)
     {
-        $clientModel = new ClientModel();
         $db = \Config\Database::connect();
 
-        // 1. Recalcul du solde fidélité réel depuis les dépôts
-        $soldeReel = $db->table('depots d')
-            ->selectSum('s.points_fidelite', 'total')
-            ->join('depot_articles da', 'da.depot_id = d.id_depot', 'left')
-            ->join('depot_prestations dp', 'dp.article_depose_id = da.id_article_depose', 'left')
-            ->join('services s', 's.id_service = dp.service_id', 'left')
-            ->where('d.client_id', $id_client)
+        $client = $db->table('clients c')
+            ->select('c.*,
+                    e.nom_complet AS enregistre_par_nom,
+                    e.matricule   AS enregistre_par_matricule,
+                    s.nom_shop    AS shop_nom')
+            ->join('employes e', 'e.id_employe = c.enregistre_par', 'left')
+            ->join('shops s',    's.id_shop = c.shop_id',           'left')
+            ->where('c.id_client', $id)
             ->get()->getRowArray();
 
-        $soldeReel = (int) ($soldeReel['total'] ?? 0);
-
-        // 2. Mise à jour du solde en base si désynchronisé
-        $clientActuel = $clientModel->getClientById($id_client);
-        if ((int) $clientActuel['solde_fidelite'] !== $soldeReel) {
-            $db->table('clients')
-            ->where('id_client', $id_client)
-            ->update(['solde_fidelite' => $soldeReel]);
-
-            // Recharge le client avec le bon solde
-            $clientActuel['solde_fidelite'] = $soldeReel;
+        if (!$client) {
+            return redirect()->to('client')
+                ->with('error', 'Client introuvable.');
         }
 
-        $data['client']  = $clientActuel;
-        $data['forfaits'] = $db->table('type_abon')->get()->getResultArray();
+        // Points fidélité
+        $solde  = $client['solde_fidelite'] ?? 0;
+        $nbDep  = $db->table('depots')
+            ->where('client_id', $id)
+            ->countAllResults();
 
-        // 3. Dépôts avec nb articles et points par dépôt
-        $data['depots'] = $db->table('depots d')
-            ->select('
-                d.id_depot,
-                d.code_commande,
-                d.created_at,
-                d.date_livraison_prevue,
-                d.total_ttc,
-                d.acompte_verse,
-                d.statut_global,
-                COUNT(DISTINCT da.id_article_depose) AS nb_articles,
-                COALESCE(SUM(s.points_fidelite), 0) AS total_points
-            ')
+        // Dépôts du client
+        $depots = $db->table('depots d')
+            ->select('d.id_depot, d.code_commande, d.created_at,
+                    d.date_livraison_prevue, d.total_ttc,
+                    d.statut_global, d.abonnement_id,
+                    s.nom_shop,
+                    COUNT(da.id_article_depose) AS nb_articles,
+                    COALESCE(SUM(CASE WHEN t.type="encaissement"
+                        AND t.statut="valide" THEN t.montant ELSE 0 END),0)
+                        AS total_encaisse')
+            ->join('shops s',           's.id_shop = d.shop_id',    'left')
             ->join('depot_articles da', 'da.depot_id = d.id_depot', 'left')
-            ->join('depot_prestations dp', 'dp.article_depose_id = da.id_article_depose', 'left')
-            ->join('services s', 's.id_service = dp.service_id', 'left')
-            ->where('d.client_id', $id_client)
+            ->join('transactions t',    't.depot_id = d.id_depot',  'left')
+            ->where('d.client_id', $id)
             ->groupBy('d.id_depot')
             ->orderBy('d.created_at', 'DESC')
-            ->get()
-            ->getResultArray();
+            ->get()->getResultArray();
 
-        return view('pages/ficheclient', $data);
+        // Abonnement actif
+        $abonActif = $db->table('abonnements a')
+            ->select('a.*, t.nom AS offre_nom')
+            ->join('type_abon t', 't.id_type_abon = a.type_abon_id', 'left')
+            ->where('a.client_id', $id)
+            ->where('a.statut', 'actif')
+            ->where('a.date_fin >=', date('Y-m-d'))
+            ->orderBy('a.date_fin', 'DESC')
+            ->limit(1)
+            ->get()->getRowArray();
+
+        return view('pages/ficheclient', [
+            'title'     => $client['nomclient'],
+            'client'    => $client,
+            'solde'     => $solde,
+            'nb_depots' => $nbDep,
+            'depots'    => $depots,
+            'abon_actif'=> $abonActif,
+        ]);
     }
 
     public function updateclient($id)
